@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 @RestController
-@RequestMapping("/api/hello")
+@RequestMapping("/api/v1/hello")
 public class HelloController {
 
     private static Random random = new Random();
