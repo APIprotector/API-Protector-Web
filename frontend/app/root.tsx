@@ -10,7 +10,6 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import Navbar from "~/components/navbar";
-import FileComparisonTool from "~/components/file-comparison-tool";
 import Footer from "~/components/footer";
 
 export const links: Route.LinksFunction = () => [
