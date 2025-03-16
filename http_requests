@@ -1,0 +1,51 @@
+POST http://localhost:8080/api/diff
+content-type: application/json
+
+{
+    "previous": {
+        "menu": {
+            "id": "file",
+            "value": "File",
+            "popup": {
+                "menuitem": [
+                    {
+                        "value": "New",
+                        "value2": "New",
+                        "onclick": "CreateNewDoc()"
+                    },
+                    {
+                        "value": "Open",
+                        "onclick": "OpenDoc()"
+                    },
+                    {
+                        "value": "Close",
+                        "onclick": "CloseDoc()"
+                    }
+                ]
+            }
+        }
+    },
+    "current": {
+        "menu": {
+            "id": "file",
+            "value": "File",
+            "popup": {
+                "menuitem": [
+                    {
+                        "value": "New",
+                        "value2": "New",
+                        "onclick": "CreateNewDoc()"
+                    },
+                    {
+                        "value": "Open",
+                        "onclick": "OpenDoc()"
+                    },
+                    {
+                        "value": "Close",
+                        "onclick": "CloseDoc()"
+                    }
+                ]
+            }
+        }
+    }
+}
