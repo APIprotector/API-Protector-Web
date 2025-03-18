@@ -1,5 +1,6 @@
 package com.APIprotector.apiprotector.service;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,7 +20,7 @@ public class DiffService {
     }
 
     public String diff(String previous, String current) {
-        Patch<String> patch = DiffUtils.diff(previous, current, null);
+        Patch<String> patch = DiffUtils.diff(Arrays.asList(previous.split("\r\n")), Arrays.asList(current.split("\r\n")));
         return patch.getDeltas().stream().map(Objects::toString)
                     .map(e -> parseDiffToJSON(e))
                     .collect(Collectors.joining(", ", "[ ", " ]"));

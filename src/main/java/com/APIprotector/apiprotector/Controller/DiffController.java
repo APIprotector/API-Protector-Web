@@ -16,13 +16,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RequestMapping("/api/diff")
 public class DiffController {
     private final DiffService diffService;
-
-    @Autowired
     private final ObjectMapper objectMapper;
 
     @Autowired
     public DiffController(DiffService diffService, ObjectMapper objectMapper) {
-        this.diffService = new DiffService();
+        this.diffService = diffService;
         this.objectMapper = objectMapper;
     }
 
@@ -32,8 +30,6 @@ public class DiffController {
         String previouAsString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(previous);
         Object current = map.get("current");
         String currentAsString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(current);
-        System.out.println(previouAsString);
-        System.out.println(currentAsString);
 
         return diffService.diff(previouAsString, currentAsString);
     }
