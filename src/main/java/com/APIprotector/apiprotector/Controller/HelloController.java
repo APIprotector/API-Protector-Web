@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.Random;
 
 @RestController
-@RequestMapping("/api/hello")
+@RequestMapping("/api/v1/hello")
 public class HelloController {
 
-    private static Random random = new Random();
-    private static ArrayList<String> helloWorlds = new ArrayList<>(
+    private static final Random random = new Random();
+    private static final ArrayList<String> helloWorlds = new ArrayList<>(
             java.util.List.of(
                     "Hello, World!", "Hola, Mundo!", "Bonjour, le Monde!", "Hallo, Welt!", "Ciao, Mondo!",
                     "Привет, мир!", "你好，世界！", "こんにちは、世界！", "안녕하세요, 세계!", "Olá, Mundo!",
