@@ -1,0 +1,32 @@
+name: CI/CD pipeline for successful merge
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          cache: 'maven'
+          distribution: 'corretto'
+
+      - name: Add executable permissions
+        run: chmod a+x mvnw
+        
+      - name: Maven install dependencies
+        run: ./mvnw clean install package
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-protector
+          path: ./target/*.jar
