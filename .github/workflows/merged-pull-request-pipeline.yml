@@ -19,7 +19,9 @@ jobs:
           cache: 'maven'
           distribution: 'corretto'
 
-
+      - name: Add executable permissions
+        run: chmod a+x mvnw
+        
       - name: Maven install dependencies
         run: ./mvnw clean install package -Dmaven.test.skip=true
 
