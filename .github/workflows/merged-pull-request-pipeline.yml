@@ -12,6 +12,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup java
         uses: actions/setup-java@v4
         with:
@@ -23,13 +24,7 @@ jobs:
         run: chmod a+x mvnw
         
       - name: Maven install dependencies
-        run: ./mvnw clean install package -Dmaven.test.skip=true
-
-        #continue-on-error, because no tests were written yet
-      - name: Run tests
-        run: ./mvnw test
-        continue-on-error: true
-
+        run: ./mvnw clean install package
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
@@ -37,48 +32,15 @@ jobs:
           name: app-protector
           path: ./target/*.jar
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker Build
-        uses: docker/build-push-action@v6
-        with:
-          push: false
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
-
-      - name: Docker Push
+      - name: Docker Build and Push
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
-
-      # - name: Setup java
-      #   uses: actions/setup-java@v4
-      #   with:
-      #     java-version: '21'
-      #     cache: 'maven'
-      #     distribution: 'corretto'
-
-      # - name: Add executable permissions
-      #   run: chmod a+x mvnw
-
-      
-          
-      # - name: Build and push docker image
-      #   run: |
-      #     mvn spring-boot:build-image \
-      #     -Ddocker.publishRegistry.username=${{ secrets.DOCKERHUB_USERNAME }} \
-      #     -Ddocker.publishRegistry.password=${{ secrets.DOCKERHUB_TOKEN }}\
-      #     -Ddocker.publishRegistry.url=hub.docker.com \
-      #     -Dspring-boot.build-image.publish=true \
-      #     -Dspring-boot.build-image.imageName${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
-        
-
-          
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
