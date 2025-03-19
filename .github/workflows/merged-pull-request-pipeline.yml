@@ -85,7 +85,7 @@ jobs:
           -Ddocker.publishRegistry.password=${{ secrets.DOCKERHUB_TOKEN }}\
           -Ddocker.publishRegistry.url=hub.docker.com \
           -Dspring-boot.build-image.publish=true \
-          -Dspring-boot.build-image.imageName=${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
+          -Dspring-boot.build-image.imageName=hub.docker.com/${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
         
 
           
