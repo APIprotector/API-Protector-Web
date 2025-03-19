@@ -47,11 +47,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Login to Docker Hub
-      #   uses: docker/login-action@v3
-      #   with:
-      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # - name: Docker Build
       #   uses: docker/build-push-action@v6
@@ -85,7 +85,7 @@ jobs:
           -Ddocker.publishRegistry.password=${{ secrets.DOCKERHUB_TOKEN }}\
           -Ddocker.publishRegistry.url=hub.docker.com \
           -Dspring-boot.build-image.publish=true \
-          -Dspring-boot.build-image.imageName=hub.docker.com/${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
+          -Dspring-boot.build-image.imageName${{ secrets.DOCKERHUB_USERNAME }}/apiprotector:${{ github.sha }}
         
 
           
