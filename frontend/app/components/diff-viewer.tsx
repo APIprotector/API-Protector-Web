@@ -8,9 +8,15 @@ import { X, ChevronDown, ChevronRight } from "lucide-react"
 import { generateUnifiedDiff } from "~/lib/diff-generator"
 import axios from "axios";
 
+interface FileData {
+  name: string
+  content: any
+  source: "upload" | "url"
+}
+
 interface DiffViewerProps {
-  file1: { name: string; content: any }
-  file2: { name: string; content: any }
+  file1: FileData
+  file2: FileData
   onClose: () => void
 }
 
@@ -100,6 +106,10 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             child.type !== "unchanged" ||
             (child.children && child.children.some((grandchild) => grandchild.type !== "unchanged")),
         ))
+
+    const getSourceIcon = (source: "upload" | "url") => {
+      return source === "upload" ? "Local file" : "URL"
+    }
 
     return (
       <div key={node.path} className="relative">
@@ -208,6 +218,10 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     return String(value)
   }
 
+  const getSourceIcon = (source: "upload" | "url") => {
+    return source === "upload" ? "Local file" : "URL"
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
@@ -223,9 +237,11 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             <div>
               <p className="text-sm font-medium">
                 Old File: <span className="font-normal">{file1.name}</span>
+                <span className="text-xs text-gray-500 ml-2">({getSourceIcon(file1.source)})</span>
               </p>
               <p className="text-sm font-medium">
                 New File: <span className="font-normal">{file2.name}</span>
+                <span className="text-xs text-gray-500 ml-2">({getSourceIcon(file2.source)})</span>
               </p>
             </div>
             <div className="flex items-center gap-4">
