@@ -1,5 +1,7 @@
 package com.APIprotector.apiprotector.Controller;
 
+import com.APIprotector.apiprotector.service.DiffNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +13,8 @@ import java.util.Map;
 
 import com.APIprotector.apiprotector.service.DiffService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static com.APIprotector.apiprotector.service.JsonDiffGenerator.generateUnifiedDiff;
 
 @RestController
 @RequestMapping("/api/diff")
@@ -31,6 +35,10 @@ public class DiffController {
         Object current = map.get("current");
         String currentAsString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(current);
 
-        return diffService.diff(previouAsString, currentAsString);
+        JsonNode obj1 = objectMapper.readTree(previouAsString);
+        JsonNode obj2 = objectMapper.readTree(currentAsString);
+
+        DiffNode diff = generateUnifiedDiff(obj1, obj2);
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(diff);
     }
 }
