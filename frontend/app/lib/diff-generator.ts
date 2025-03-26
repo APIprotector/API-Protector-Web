@@ -94,9 +94,9 @@ function createCompleteTree(root: DiffNode, obj1: any, obj2: any): void {
 
     // For added or removed objects, add all their children with the same status
     if (type === "added" && typeof value2 === "object" && value2 !== null && !Array.isArray(value2)) {
-      addObjectChildrenWithStatus(node, value2, "added")
+      addObjectToTree(node, value2, "added")
     } else if (type === "removed" && typeof value1 === "object" && value1 !== null && !Array.isArray(value1)) {
-      addObjectChildrenWithStatus(node, value1, "removed")
+      addObjectToTree(node, value1, "removed")
     }
     // Recursively process children for objects that exist in both
     else if (
@@ -141,35 +141,8 @@ function convertChangedNodes(node: DiffNode): void {
   }
 }
 
-// Helper function to add an entire object to the tree
-function addObjectToTree(parent: DiffNode, obj: any, type: "added" | "removed"): void {
-  if (obj === null || typeof obj !== "object") {
-    return
-  }
-
-  for (const key of Object.keys(obj)) {
-    const value = obj[key]
-
-    const node: DiffNode = {
-      key,
-      path: parent.path ? `${parent.path}.${key}` : key,
-      type,
-      value1: type === "removed" ? value : undefined,
-      value2: type === "added" ? value : undefined,
-      children: [],
-    }
-
-    parent.children!.push(node)
-
-    // Recursively add children for objects
-    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      addObjectChildrenWithStatus(node, value, type)
-    }
-  }
-}
-
 // Helper function to add all children of an object with the same status
-function addObjectChildrenWithStatus(parent: DiffNode, obj: any, type: "added" | "removed"): void {
+function addObjectToTree(parent: DiffNode, obj: any, type: "added" | "removed"): void {
   if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
     return
   }
@@ -190,7 +163,7 @@ function addObjectChildrenWithStatus(parent: DiffNode, obj: any, type: "added" |
 
     // Recursively add children
     if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      addObjectChildrenWithStatus(node, value, type)
+      addObjectToTree(node, value, type)
     }
   }
 }
