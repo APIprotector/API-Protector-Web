@@ -14,7 +14,7 @@ import java.util.Map;
 import com.APIprotector.apiprotector.service.DiffService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static com.APIprotector.apiprotector.service.JsonDiffGenerator.generateUnifiedDiff;
+import com.APIprotector.apiprotector.service.DiffGeneratorV2;
 
 @RestController
 @RequestMapping("/api/diff")
@@ -38,7 +38,7 @@ public class DiffController {
         JsonNode obj1 = objectMapper.readTree(previouAsString);
         JsonNode obj2 = objectMapper.readTree(currentAsString);
 
-        DiffNode diff = generateUnifiedDiff(obj1, obj2);
+        DiffNode diff = DiffGeneratorV2.generateUnifiedDiff((Map<String, Object>)map.get("previous"), (Map<String, Object>)map.get("current"));
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(diff);
     }
 }
