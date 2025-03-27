@@ -1,13 +1,11 @@
 package com.APIprotector.apiprotector.service;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.*;
 
-public class DiffGeneratorV2 {
+public class DiffGenerator {
 
         public static DiffNode generateUnifiedDiff(Map<String, Object> obj1, Map<String, Object> obj2) throws IOException {
             DiffNode root = new DiffNode("root", "", "unchanged", null, null);
@@ -69,13 +67,8 @@ public class DiffGeneratorV2 {
 
         private static void convertChangedNodes(DiffNode node) {
             if (node.children != null && !node.children.isEmpty()) {
-                node.children.forEach(DiffGeneratorV2::convertChangedNodes);
+                node.children.forEach(DiffGenerator::convertChangedNodes);
             }
-
-//            if ("changed".equals(node.type) && (node.value1 == null || node.value2 == null ||
-//                    !(node.value1 instanceof Map) || !(node.value2 instanceof Map))) {
-//                node.type = "removed";
-//            }
         }
 
         private static void addObjectToTree(DiffNode parent, Map<String, Object> obj, String type) throws JsonProcessingException {
