@@ -6,6 +6,13 @@ import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
 import { X, ChevronDown, ChevronRight } from "lucide-react"
 import { generateUnifiedDiff } from "~/lib/diff-generator"
+import axios from "axios";
+
+interface FileData {
+  name: string
+  content: any
+  source: "upload" | "url"
+}
 
 interface FileData {
   name: string
@@ -35,26 +42,34 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    let result
     setIsLoading(true)
-    const result = generateUnifiedDiff(file1.content, file2.content)
+    axios.post("api/diff", {
+      previous: file1.content,
+      current: file2.content
+    }).then((response) => {
+      result = response.data as DiffNode
 
-    // Initially expand all nodes that have changes
-    const nodesToExpand = new Set<string>()
+      // Initially expand all nodes that have changes
+      const nodesToExpand = new Set<string>()
 
-    function collectExpandedNodes(node: DiffNode) {
-      if (node.type !== "unchanged" || (node.children && node.children.some((child) => child.type !== "unchanged"))) {
-        nodesToExpand.add(node.path)
+      function collectExpandedNodes(node: DiffNode) {
+        if (node.type !== "unchanged" || (node.children && node.children.some((child) => child.type !== "unchanged"))) {
+          nodesToExpand.add(node.path)
+        }
+
+        if (node.children) {
+          node.children.forEach(collectExpandedNodes)
+        }
       }
 
-      if (node.children) {
-        node.children.forEach(collectExpandedNodes)
-      }
-    }
+      collectExpandedNodes(result)
+      setExpandedNodes(nodesToExpand)
+      setDiffTree(result)
+      setIsLoading(false)
+    })
+    // const result = generateUnifiedDiff(file1.content, file2.content)
 
-    collectExpandedNodes(result)
-    setExpandedNodes(nodesToExpand)
-    setDiffTree(result)
-    setIsLoading(false)
   }, [file1, file2])
 
   useEffect(() => {
