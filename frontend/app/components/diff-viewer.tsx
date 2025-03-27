@@ -39,8 +39,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     let result
     setIsLoading(true)
     axios.post("api/diff", {
-      previous: file1,
-      current: file2
+      previous: file1.content,
+      current: file2.content
     }).then((response) => {
       result = response.data as DiffNode
 
