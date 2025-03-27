@@ -51,7 +51,7 @@ public class DiffGeneratorV2 {
                 } else {
                     type = "unchanged";
                 }
-                DiffNode node = new DiffNode(key, root.path.isEmpty() ? key : root.path + "." + key, type, new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value1)), new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value1)));
+                DiffNode node = new DiffNode(key, root.path.isEmpty() ? key : root.path + "." + key, type, new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value1)), new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value2)));
                 root.children.add(node);
 
                 if (type.equals("added") && value2 instanceof Map) {
@@ -72,10 +72,10 @@ public class DiffGeneratorV2 {
                 node.children.forEach(DiffGeneratorV2::convertChangedNodes);
             }
 
-            if ("changed".equals(node.type) && (node.value1 == null || node.value2 == null ||
-                    !(node.value1 instanceof Map) || !(node.value2 instanceof Map))) {
-                node.type = "removed";
-            }
+//            if ("changed".equals(node.type) && (node.value1 == null || node.value2 == null ||
+//                    !(node.value1 instanceof Map) || !(node.value2 instanceof Map))) {
+//                node.type = "removed";
+//            }
         }
 
         private static void addObjectToTree(DiffNode parent, Map<String, Object> obj, String type) throws JsonProcessingException {
