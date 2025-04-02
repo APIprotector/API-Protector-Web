@@ -13,7 +13,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Running OpenAPI Spec diff action
-        continue-on-error: true
         uses: oasdiff/oasdiff-action/breaking@main
         with:
           # In original actions we would use this base:
