@@ -15,6 +15,11 @@ jobs:
       - name: Running OpenAPI Spec diff action
         uses: oasdiff/oasdiff-action/breaking@main
         with:
+          # In original actions we would use this base:
+          # https://raw.githubusercontent.com/APIprotector/demo/refs/heads/master/src/main/resources/openapi.yaml
+
+          # And we would use this revision (new api spec) from the current changes coming up from pull request
+          # https://raw.githubusercontent.com/APIprotector/demo/refs/heads${{ github.ref_name }}/src/main/resources/openapi.yaml
           base: https://raw.githubusercontent.com/APIprotector/ApiSpecRetriever/refs/heads/master/API%20Specki/Kubernetes/swagger_2025-03-25.json
           revision: https://raw.githubusercontent.com/APIprotector/ApiSpecRetriever/refs/heads/master/API%20Specki/Kubernetes/swagger_2025-03-25.json
           fail-on: ERR
