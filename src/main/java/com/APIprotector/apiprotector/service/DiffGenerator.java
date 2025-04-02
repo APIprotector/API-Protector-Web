@@ -7,7 +7,7 @@ import java.util.*;
 
 public class DiffGenerator {
     public static DiffNode generateUnifiedDiff(Map<String, Object> obj1, Map<String, Object> obj2) throws IOException {
-        DiffNode root = new DiffNode("root", "", "unchanged", null, null);
+        var root = new DiffNode("root", "", "unchanged", null, null);
         createCompleteTree(root, obj1, obj2);
         convertChangedNodes(root);
 
@@ -48,7 +48,11 @@ public class DiffGenerator {
             } else {
                 type = "unchanged";
             }
-            DiffNode node = new DiffNode(key, root.path.isEmpty() ? key : root.path + "." + key, type, new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value1)), new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value2)));
+            var node = new DiffNode(key,
+                    root.path.isEmpty() ? key : root.path + "." + key,
+                    type,
+                    new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value1)),
+                    new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(value2)));
             root.children.add(node);
 
             if (type.equals("added") && value2 instanceof Map) {
@@ -74,10 +78,19 @@ public class DiffGenerator {
         if (obj == null) {
             return;
         }
+
         for (Map.Entry<String, Object> entry : obj.entrySet()) {
-            DiffNode node = new DiffNode(entry.getKey(), parent.path + "." + entry.getKey(), type,
-                    type.equals("removed") ? new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(entry.getValue())) : null,
-                    type.equals("added") ? new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(entry.getValue())) : null);
+            DiffNode node = new DiffNode(
+                    entry.getKey(),
+                    parent.path + "." + entry.getKey(),
+                    type,
+                    type.equals("removed") ?
+                            new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(entry.getValue())) :
+                            null,
+                    type.equals("added") ?
+                            new ObjectMapper().readTree(new ObjectMapper().writeValueAsString(entry.getValue())) :
+                            null);
+
             parent.children.add(node);
 
             if (entry.getValue() instanceof Map) {

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.io.IOException;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.APIprotector.apiprotector.service.DiffGenerator;
@@ -20,7 +21,7 @@ public class DiffController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String getSpecsToDiff(@RequestBody Map<String, Object> map) throws Exception {
+    public String getSpecsToDiff(@RequestBody Map<String, Object> map) throws IOException {
         Object previous = map.get("previous");
         Object current = map.get("current");
 
