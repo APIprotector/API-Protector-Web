@@ -1,4 +1,4 @@
-name: CI/CD pipeline for successful merge
+name: CI/CD pipeline for opening a pull request
 on:
   workflow_dispatch:
   pull_request:
