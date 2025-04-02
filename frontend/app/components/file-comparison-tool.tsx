@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent } from "~/components/ui/card"
 import { Alert, AlertDescription } from "~/components/ui/alert"
@@ -15,6 +15,8 @@ interface FileData {
   name: string
   content: any
   source: "upload" | "url"
+  rawContent?: string // Store the original unparsed content
+  fileExtension?: string // Store the file extension
 }
 
 export default function FileComparisonTool() {
@@ -27,6 +29,28 @@ export default function FileComparisonTool() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showDiff, setShowDiff] = useState(false)
+  const [resolveRefs, setResolveRefs] = useState(false)
+
+  // Effect to reprocess files when resolveRefs changes
+  useEffect(() => {
+    const reprocessFiles = () => {
+      try {
+        if (file1?.rawContent && file1.fileExtension) {
+          const parsedContent = parseFileContent(file1.rawContent, file1.fileExtension, resolveRefs);
+          setFile1({ ...file1, content: parsedContent });
+        }
+
+        if (file2?.rawContent && file2.fileExtension) {
+          const parsedContent = parseFileContent(file2.rawContent, file2.fileExtension, resolveRefs);
+          setFile2({ ...file2, content: parsedContent });
+        }
+      } catch (err) {
+        setError(`Error reprocessing files: ${(err as Error).message}`);
+      }
+    };
+
+    reprocessFiles();
+  }, [resolveRefs]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fileNumber: 1 | 2) => {
     setError(null)
@@ -42,12 +66,24 @@ export default function FileComparisonTool() {
 
     try {
       const content = await readFileContent(file)
-      const parsedContent = parseFileContent(content, fileExtension as string)
+      const parsedContent = parseFileContent(content, fileExtension as string, resolveRefs)
 
       if (fileNumber === 1) {
-        setFile1({ name: file.name, content: parsedContent, source: "upload" })
+        setFile1({
+          name: file.name,
+          content: parsedContent,
+          source: "upload",
+          rawContent: content,
+          fileExtension: fileExtension as string
+        })
       } else {
-        setFile2({ name: file.name, content: parsedContent, source: "upload" })
+        setFile2({
+          name: file.name,
+          content: parsedContent,
+          source: "upload",
+          rawContent: content,
+          fileExtension: fileExtension as string
+        })
       }
     } catch (err) {
       setError(`Error parsing file: ${(err as Error).message}`)
@@ -63,7 +99,7 @@ export default function FileComparisonTool() {
     })
   }
 
-  const fetchFileFromUrl = async (url: string): Promise<{ name: string; content: any }> => {
+  const fetchFileFromUrl = async (url: string): Promise<{ name: string; content: any; rawContent: string; fileExtension: string }> => {
     if (!url) {
       throw new Error("Please enter a URL")
     }
@@ -86,11 +122,13 @@ export default function FileComparisonTool() {
     }
 
     const content = await response.text()
-    const parsedContent = parseFileContent(content, fileExtension as string)
+    const parsedContent = parseFileContent(content, fileExtension as string, resolveRefs)
 
     return {
       name: filename || `file-${Date.now()}`,
       content: parsedContent,
+      rawContent: content,
+      fileExtension: fileExtension as string
     }
   }
 
@@ -158,63 +196,63 @@ export default function FileComparisonTool() {
     const setActiveTab = fileNumber === 1 ? setActiveTab1 : setActiveTab2
 
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <Tabs
-            defaultValue="upload"
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as "upload" | "url")}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="upload">Upload File</TabsTrigger>
-              <TabsTrigger value="url">URL</TabsTrigger>
-            </TabsList>
+        <Card>
+          <CardContent className="pt-6">
+            <Tabs
+                defaultValue="upload"
+                value={activeTab}
+                onValueChange={(value) => setActiveTab(value as "upload" | "url")}
+                className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="upload">Upload File</TabsTrigger>
+                <TabsTrigger value="url">URL</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="upload">
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
-                <FileJson className="h-10 w-10 text-gray-400 mb-2" />
-                <p className="text-sm font-medium mb-2">
-                  {file && file.source === "upload" ? file.name : `Upload file ${fileNumber} (JSON/YAML)`}
-                </p>
-                <div className="relative">
-                  <Button variant="outline" size="sm" className="mt-2">
-                    <FileUp className="h-4 w-4 mr-2" />
-                    Select File
-                  </Button>
-                  <input
-                    type="file"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    accept=".json,.yaml,.yml"
-                    onChange={(e) => handleFileUpload(e, fileNumber)}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="url">
-              <div className="flex flex-col space-y-4">
-                <div className="flex items-center space-x-2">
-                  <LinkIcon className="h-5 w-5 text-gray-400" />
-                  <p className="text-sm font-medium">
-                    {file && file.source === "url" ? file.name : `Enter URL to file ${fileNumber}`}
+              <TabsContent value="upload">
+                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <FileJson className="h-10 w-10 text-gray-400 mb-2" />
+                  <p className="text-sm font-medium mb-2">
+                    {file && file.source === "upload" ? file.name : `Upload file ${fileNumber} (JSON/YAML)`}
                   </p>
+                  <div className="relative">
+                    <Button variant="outline" size="sm" className="mt-2">
+                      <FileUp className="h-4 w-4 mr-2" />
+                      Select File
+                    </Button>
+                    <input
+                        type="file"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        accept=".json,.yaml,.yml"
+                        onChange={(e) => handleFileUpload(e, fileNumber)}
+                    />
+                  </div>
                 </div>
+              </TabsContent>
 
-                <Input
-                  type="url"
-                  placeholder="https://example.com/file.json"
-                  value={fileNumber === 1 ? url1 : url2}
-                  onChange={(e) => (fileNumber === 1 ? setUrl1(e.target.value) : setUrl2(e.target.value))}
-                  className="w-full"
-                />
+              <TabsContent value="url">
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <LinkIcon className="h-5 w-5 text-gray-400" />
+                    <p className="text-sm font-medium">
+                      {file && file.source === "url" ? file.name : `Enter URL to file ${fileNumber}`}
+                    </p>
+                  </div>
 
-                <p className="text-xs text-gray-500">File will be fetched when you click "Compare Files"</p>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  <Input
+                      type="url"
+                      placeholder="https://example.com/file.json"
+                      value={fileNumber === 1 ? url1 : url2}
+                      onChange={(e) => (fileNumber === 1 ? setUrl1(e.target.value) : setUrl2(e.target.value))}
+                      className="w-full"
+                  />
+
+                  <p className="text-xs text-gray-500">File will be fetched when you click "Compare Files"</p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
     )
   }
 
@@ -231,27 +269,42 @@ export default function FileComparisonTool() {
   }
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <div className="space-y-6">
+        {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {renderFileCard(1)}
-        {renderFileCard(2)}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {renderFileCard(1)}
+          {renderFileCard(2)}
+        </div>
+
+        {/* Reference resolution toggle */}
+        <div className="flex justify-center mt-6">
+          <div className="flex items-center space-x-2">
+            <input
+                type="checkbox"
+                id="resolve-refs"
+                checked={resolveRefs}
+                onChange={(e) => setResolveRefs(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="resolve-refs" className="text-sm font-medium text-gray-700">
+              Resolve $ref references
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-center mt-4">
+          <Button size="lg" onClick={handleCompare} disabled={isCompareDisabled()}>
+            {isLoading ? "Fetching Files..." : "Compare Files"}
+          </Button>
+        </div>
+
+        {showDiff && file1 && file2 && <DiffViewer file1={file1} file2={file2} onClose={handleCloseDiff} />}
       </div>
-
-      <div className="flex justify-center mt-8">
-        <Button size="lg" onClick={handleCompare} disabled={isCompareDisabled()}>
-          {isLoading ? "Fetching Files..." : "Compare Files"}
-        </Button>
-      </div>
-
-      {showDiff && file1 && file2 && <DiffViewer file1={file1} file2={file2} onClose={handleCloseDiff} />}
-    </div>
   )
 }
-
