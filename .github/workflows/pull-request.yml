@@ -17,7 +17,9 @@ jobs:
         with:
           base: https://raw.githubusercontent.com/APIprotector/ApiSpecRetriever/refs/heads/master/API%20Specki/Kubernetes/swagger_2025-03-25.json
           revision: https://raw.githubusercontent.com/APIprotector/ApiSpecRetriever/refs/heads/master/API%20Specki/Kubernetes/swagger_2025-03-25.json
-          fail-on: breaking
+          fail-on: ERR
+          include-path-params: false
+          composed: false
 
       - name: Setup java
         uses: actions/setup-java@v4
