@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: API Protector
+  description: |-
+    The OpenAPI specifaction of the API Protector Web Application which allows easy comparision between changing versions of OpenAPI Specifiations.
+    It's compatible with either Json or Yaml format and prints pleasant looking, readable output in web browser.
+
+    
+  # termsOfService: http://swagger.io/terms/
+  contact:
+    email: 273022@student.pwr.edu.pl
+  license:
+    name: GPL-3.0 license
+    url: https://www.gnu.org/licenses/gpl-3.0.html
+  version: 1.0.0
+# externalDocs:
+#   description: Find out more about Swagger
+#   url: http://swagger.io
+servers:
+  - url: https://placeholder.org/api/
+# tags:
+#   - name: pet
+#     description: Everything about your Pets
+#     externalDocs:
+#       description: Find out more
+#       url: http://swagger.io
+#   - name: store
+#     description: Access to Petstore orders
+#     externalDocs:
+#       description: Find out more about our store
+#       url: http://swagger.io
+#   - name: user
+#     description: Operations about user
+paths:
+  /diff:
+    post:
+      tags:
+        - diff
+      summary: returns the differences between 2 OpenAPI specifications
+      description: returns the differences between 2 OpenAPI specifications
+      operationId: diffSpecs
+      requestBody:
+        description: Update an existent pet in the store
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiffSpecs'
+          application/yaml:
+            schema:
+              $ref: '#/components/schemas/DiffSpecs'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'          
+            application/yaml:
+              schema:
+                $ref: '#/components/schemas/Node'
+        '400':
+          description: Invalid data supplied
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        key:
+          type: string
+          example: description
+        path:
+          type: string
+          example: info.description
+        type:
+          type: string
+          description: state of property
+          example: changed
+          enum:
+            - unchanged
+            - changed
+            - added
+            - removed
+        previous:
+          type: array
+          items:
+            type: object
+        current:
+          type: array
+          items:
+            type: object
+        children:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/Node'
+        isExpanded:
+          type: boolean
+          example: true
+    DiffSpecs:
+      type: object
+      properties:
+        previous:
+          type: object
+          description: previous version of OpenAPI Specifiaction
+        current:
+          type: object
+          description: current version of OpenAPI Specifiaction
