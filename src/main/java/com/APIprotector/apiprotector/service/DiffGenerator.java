@@ -1,11 +1,17 @@
 package com.APIprotector.apiprotector.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.openapitools.openapidiff.core.OpenApiCompare;
+import org.openapitools.openapidiff.core.model.ChangedOpenApi;
 
 import java.io.IOException;
 import java.util.*;
 
 public class DiffGenerator {
+    public static ChangedOpenApi useOpenApiDiff(final String previous, final String current) {
+        return OpenApiCompare.fromContents(previous, current);
+    }
+
     public static DiffNode generateUnifiedDiff(Map<String, Object> obj1, Map<String, Object> obj2) throws IOException {
         var root = new DiffNode("root", "", "unchanged", null, null);
         createCompleteTree(root, obj1, obj2);
