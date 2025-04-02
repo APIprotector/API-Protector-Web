@@ -5,14 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
 import { X, ChevronDown, ChevronRight } from "lucide-react"
-import { generateUnifiedDiff } from "~/lib/diff-generator"
 import axios from "axios";
-
-interface FileData {
-  name: string
-  content: any
-  source: "upload" | "url"
-}
 
 interface FileData {
   name: string
@@ -112,10 +105,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             child.type !== "unchanged" ||
             (child.children && child.children.some((grandchild) => grandchild.type !== "unchanged")),
         ))
-
-    const getSourceIcon = (source: "upload" | "url") => {
-      return source === "upload" ? "Local file" : "URL"
-    }
 
     return (
       <div key={node.path} className="relative">
