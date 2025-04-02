@@ -61,7 +61,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       setDiffTree(result)
       setIsLoading(false)
     })
-    // const result = generateUnifiedDiff(file1.content, file2.content)
 
   }, [file1, file2])
 
