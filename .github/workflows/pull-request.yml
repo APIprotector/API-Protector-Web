@@ -12,6 +12,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Running OpenAPI Spec diff action
+        uses: oasdiff/oasdiff-action/breaking@main
+        with:
+          base: https://raw.githubusercontent.com/APIprotector/ApiSpecRetriever/refs/heads/master/API%20Specki/Kubernetes/swagger_2025-03-25.json
+          revision: https://raw.githubusercontent.com/APIprotector/ApiSpecRetriever/refs/heads/master/API%20Specki/Kubernetes/swagger_2025-03-25.json
+          fail-on: breaking
+
       - name: Setup java
         uses: actions/setup-java@v4
         with:
