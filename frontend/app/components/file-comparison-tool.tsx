@@ -293,7 +293,7 @@ export default function FileComparisonTool() {
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
             />
             <label htmlFor="resolve-refs" className="text-sm font-medium text-gray-700">
-              Resolve $ref references
+              Resolve references
             </label>
           </div>
         </div>

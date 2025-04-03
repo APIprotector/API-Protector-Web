@@ -1,59 +1,23 @@
 import yaml from "js-yaml"
 
-// export function resolveReferences(
-//     obj: any,
-//     rootObj: any = null,
-//     resolveRefs: boolean = true,
-//     visited: Set<string> = new Set()
-// ): any {
-//   if (!resolveRefs) return obj;
-//
-//   if (obj === null || typeof obj !== 'object') return obj;
-//
-//   // Use the passed rootObj or default to the object itself
-//   const root = rootObj || obj;
-//
-//   if (Array.isArray(obj)) {
-//     return obj.map(item => resolveReferences(item, root, resolveRefs, visited));
-//   }
-//
-//   if (obj.$ref && typeof obj.$ref === 'string') {
-//     const refPath = obj.$ref.startsWith('#/') ? obj.$ref.substring(2) : obj.$ref;
-//
-//     const pathParts = refPath.split('/');
-//     let referencedObj = root;
-//
-//     const pathString = refPath;
-//     if (visited.has(pathString)) {
-//       return { $ref: obj.$ref, circular: true };
-//     }
-//
-//     visited.add(pathString);
-//
-//     try {
-//       for (const part of pathParts) {
-//         if (part && referencedObj) {
-//           referencedObj = referencedObj[part];
-//         }
-//       }
-//
-//       if (referencedObj !== undefined) {
-//         return resolveReferences(referencedObj, root, resolveRefs, visited);
-//       }
-//     } catch (error) {
-//       console.error(`Error resolving reference ${obj.$ref}:`, error);
-//     }
-//
-//     return obj;
-//   }
-//
-//   const result: Record<string, any> = {};
-//   for (const [key, value] of Object.entries(obj)) {
-//     result[key] = resolveReferences(value, root, resolveRefs, visited);
-//   }
-//
-//   return result;
-// }
+function cleanRefs(obj: any, maps: Map<string, object>):any {
+  if (Array.isArray(obj)) {
+    return obj.map(m => cleanRefs(m, maps));
+  }
+
+  if (typeof obj !== 'object' || obj === null) return obj;
+
+  if ('$ref' in obj) {
+    const refPath = obj.$ref.startsWith('#/') ? obj.$ref.substring(2) : obj.$ref;
+    return { ...obj, ...maps.get(refPath) };
+  }
+
+  for (const key in obj) {
+    obj[key] = cleanRefs(obj[key], maps);
+  }
+
+  return obj;
+}
 
 export function parseFileContent(content: string, fileExtension: string, resolveRefs: boolean = false): any {
   try {
@@ -71,7 +35,7 @@ export function parseFileContent(content: string, fileExtension: string, resolve
       const regexp = /\{\"\$ref":"#\/([\w\-\/]+)\"\}/g;
 
       let exact: Set<string> = new Set();
-      let maps: Map<string, string> = new Map();
+      let maps: Map<string, object> = new Map();
 
       const contentString = JSON.stringify(parsedContent);
 
@@ -85,15 +49,10 @@ export function parseFileContent(content: string, fileExtension: string, resolve
         for (const p of path) {
           obj = obj[p];
         }
-        maps.set(key, JSON.stringify(obj));
+        maps.set(key, obj);
       }
 
-
-      const result = contentString.replace(regexp, (match, captureGroup) => {
-        return maps.get(captureGroup) || match;
-      });
-
-      parsedContent = JSON.parse(result);
+      parsedContent = cleanRefs(parsedContent, maps);
     }
 
     // Resolve references if the flag is true
