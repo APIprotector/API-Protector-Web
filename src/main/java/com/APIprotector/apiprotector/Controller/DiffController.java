@@ -33,7 +33,7 @@ public class DiffController {
         String currentAsString = objectMapper.writeValueAsString(current);
 
 
-        JsonNode diff = JsonComparator.compareJsonNodes(objectMapper.readTree(previousAsString), objectMapper.readTree(currentAsString), "");
+        JsonNode diff = JsonComparator.compareJsonNodes(objectMapper.readTree(previousAsString), objectMapper.readTree(currentAsString), "", "");
 
 //        DiffNode diff = DiffGenerator.generateUnifiedDiff((Map<String, Object>) previous, (Map<String, Object>) current);
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(diff);
