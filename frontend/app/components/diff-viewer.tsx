@@ -92,8 +92,12 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
     // Determine if this is a primitive value or an object/array
     const isPrimitive =
-      (typeof node.value1 !== "object" || node.value1 === null || Array.isArray(node.value1)) &&
-      (typeof node.value2 !== "object" || node.value2 === null || Array.isArray(node.value2))
+      (typeof node.value1 !== "object" || node.value1 === null) &&
+      (typeof node.value2 !== "object" || node.value2 === null)
+
+    const isArray = Array.isArray(node.value1) || Array.isArray(node.value2)
+
+    console.log(isPrimitive, node.value1, node.value2)
 
     return (
       <div key={node.path} className="relative">
@@ -114,8 +118,10 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             {node.type === "added" && "+ "}
             {node.type === "removed" && "- "}
             {node.key}
-            {hasChildren && !isPrimitive && ": {"}
-            {!hasChildren && !isPrimitive && node.type === "unchanged" && ": {}"}
+            {hasChildren && !isPrimitive && !isArray && ": {"}
+            {hasChildren && !isPrimitive && isArray && ": ["}
+            {!hasChildren && !isPrimitive && !isArray && node.type === "unchanged" && ": {}"}
+            {!hasChildren && !isPrimitive && isArray && node.type === "unchanged" && ": []"}
           </div>
 
           {/* Value for primitive types */}
@@ -156,7 +162,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               <div className={`font-mono py-1 ${getTextColor(node.type)}`} style={{ paddingLeft: `${indent}px` }}>
                 {node.type === "added" && "+ "}
                 {node.type === "removed" && "- "}
-                {"}"}
+                {isArray? ("]"): ("}")}
               </div>
             )}
           </div>

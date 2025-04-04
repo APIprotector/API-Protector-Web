@@ -80,41 +80,75 @@ public class JsonComparator {
             list2.sort(Comparator.comparing(JsonNode::toString));
             int i = 0;
 
-            List<JsonNode> list1rem = new ArrayList<>();
-            List<JsonNode> list2rem = new ArrayList<>();
-
-            // Identify changed items (same structure but different values)
+            // List to keep track of removable nodes
+            List<JsonNode> rem = new ArrayList<>();
+            // Identify same items (same structure but different values)
             for (JsonNode nodeNo1 : list1) {
+                JsonNode nodeToRemoval = null;
                 for (JsonNode nodeNo2 : list2) {
-                    if (nodeNo1.equals(nodeNo2) || isSimilar(nodeNo1, nodeNo2)){
+                    if (nodeNo1.equals(nodeNo2)){
                         String newPath = path + "[" + i + "]";
                         JsonNode childNode = compareJsonNodes(nodeNo1, nodeNo2, newPath, nodeKey + "[" + i + "]");
                         children.add(childNode);
                         i++;
                         // Remove the matched node from list2 and list1 to avoid duplicate comparisons
-                        list1rem.add(nodeNo1);
-                        list2rem.add(nodeNo2);
+                        rem.add(nodeNo1);
+                        nodeToRemoval = nodeNo2;
+                        break;
                     }
                 }
+                if (nodeToRemoval != null) {
+                    // Remove the matched node from list2
+                    list2.remove(nodeToRemoval);
+                }
             }
-
             // Remove matched nodes from the original lists
-            list1.removeAll(list1rem);
-            list2.removeAll(list2rem);
+            list1.removeAll(rem);
 
+            // List to keep track of removable nodes
+            rem = new ArrayList<>();
+            // Identify changed items (same structure but different values)
+            for (JsonNode nodeNo1 : list1) {
+                JsonNode nodeToRemoval = null;
+                for (JsonNode nodeNo2 : list2) {
+                    if (isSimilar(nodeNo1, nodeNo2)){
+                        String newPath = path + "[" + i + "]";
+                        JsonNode childNode = compareJsonNodes(nodeNo1, nodeNo2, newPath, nodeKey + "[" + i + "]");
+                        children.add(childNode);
+                        i++;
+                        // Remove the matched node from list2 and list1 to avoid duplicate comparisons
+                        rem.add(nodeNo1);
+                        nodeToRemoval = nodeNo2;
+                        break;
+                    }
+                }
+                if (nodeToRemoval != null) {
+                    // Remove the matched node from list2
+                    list2.remove(nodeToRemoval);
+                }
+            }
+            // Remove matched nodes from the original lists
+            list1.removeAll(rem);
+
+
+            // Identify removed items (exist in list1 but not in list2)
             for (JsonNode node : list1) {
-                // Identify removed items (exist in list1 but not in list2)
                 if (!containsNode(list2, node)) {
                     String newPath = path + "[" + i + "]";
                     JsonNode childNode = compareJsonNodes(node, null, newPath, nodeKey + "[" + i + "]");
                     children.add(childNode);
                     i++;
-                } else {// Identify added items (exist in list2 but not in list1)
-                    String newPath = path + "[" + i + "]";
-                    JsonNode childNode = compareJsonNodes(null, node, newPath, nodeKey + "[" + i + "]");
-                    children.add(childNode);
-                    i++;
+                    // Remove the matched node from list2
+                    list2.remove(node);
                 }
+            }
+
+            // Rest of items exist in list2 but not in list1
+            for (JsonNode node : list2) {
+                String newPath = path + "[" + i + "]";
+                JsonNode childNode = compareJsonNodes(node, null, newPath, nodeKey + "[" + i + "]");
+                children.add(childNode);
+                i++;
             }
         }
         // iterate over array node even if one of them is null
