@@ -10,14 +10,6 @@ export default function Navbar() {
             <Shield className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold">API Protector</span>
           </NavLink>
-          <nav className="hidden md:flex items-center space-x-6">
-            <NavLink to="/" className="text-sm text-gray-600 hover:text-primary">
-              Home
-            </NavLink>
-            <NavLink to="/compare" className="text-sm text-gray-600 hover:text-primary">
-              Compare
-            </NavLink>
-          </nav>
         </div>
       </div>
     </header>

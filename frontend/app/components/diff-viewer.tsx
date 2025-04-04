@@ -4,15 +4,8 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
-import { X, ChevronDown, ChevronRight } from "lucide-react"
-import { generateUnifiedDiff } from "~/lib/diff-generator"
+import {X, ChevronDown, ChevronRight, LoaderPinwheel, Shell} from "lucide-react"
 import axios from "axios";
-
-interface FileData {
-  name: string
-  content: any
-  source: "upload" | "url"
-}
 
 interface FileData {
   name: string
@@ -68,7 +61,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       setDiffTree(result)
       setIsLoading(false)
     })
-    // const result = generateUnifiedDiff(file1.content, file2.content)
 
   }, [file1, file2])
 
@@ -102,20 +94,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     const isPrimitive =
       (typeof node.value1 !== "object" || node.value1 === null || Array.isArray(node.value1)) &&
       (typeof node.value2 !== "object" || node.value2 === null || Array.isArray(node.value2))
-
-    // Determine if this node or any of its children have changes
-    const hasChanges =
-      node.type !== "unchanged" ||
-      (node.children &&
-        node.children.some(
-          (child) =>
-            child.type !== "unchanged" ||
-            (child.children && child.children.some((grandchild) => grandchild.type !== "unchanged")),
-        ))
-
-    const getSourceIcon = (source: "upload" | "url") => {
-      return source === "upload" ? "Local file" : "URL"
-    }
 
     return (
       <div key={node.path} className="relative">
@@ -270,7 +248,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
         <div className="flex-1 overflow-auto p-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <p>Loading comparison...</p>
+              <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
+              <p className="text-gray-500 text-xl" >Analyzing differences...</p>
             </div>
           ) : diffTree?.type === "unchanged" ? (
               <>
