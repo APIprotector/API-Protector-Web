@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
 import {X, ChevronDown, ChevronRight, LoaderPinwheel, Shell} from "lucide-react"
 import axios from "axios";
+import {Switch} from "~/components/ui/switch";
 
 interface FileData {
   name: string
@@ -32,6 +33,7 @@ interface DiffNode {
 export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [diffTree, setDiffTree] = useState<DiffNode | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showUnchanged, setShowUnchanged] = useState(true)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -97,7 +99,9 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
     const isArray = Array.isArray(node.value1) || Array.isArray(node.value2)
 
-    console.log(isPrimitive, node.value1, node.value2)
+    if (showUnchanged && node.type === "unchanged") {
+      return (<></>);
+    }
 
     return (
       <div key={node.path} className="relative">
@@ -276,12 +280,22 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             </div>
           ) : (
               <div className="flex items-center justify-center h-full">
-                  <p className="text-red-500">An Error Occurred :/.</p>
+                  <p className="text-red-500">An Error Occurred :/</p>
               </div>
           )}
         </div>
 
-        <div className="p-4 border-t flex justify-end">
+        <div className="p-4 border-t flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={showUnchanged}
+              onCheckedChange={(e) => setShowUnchanged(e)}
+              id="hide-unchanged"
+            />
+            <label htmlFor="hide-unchanged" className="text-sm font-medium cursor-pointer">
+              Hide unchanged nodes
+            </label>
+          </div>
           <Button onClick={onClose}>Close</Button>
         </div>
       </div>

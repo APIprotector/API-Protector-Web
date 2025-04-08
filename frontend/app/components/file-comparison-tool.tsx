@@ -10,6 +10,7 @@ import { Input } from "~/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import DiffViewer from "./diff-viewer"
 import { parseFileContent } from "~/lib/file-parser"
+import {Switch} from "~/components/ui/switch";
 
 interface FileData {
   name: string
@@ -285,12 +286,10 @@ export default function FileComparisonTool() {
         {/* Reference resolution toggle */}
         <div className="flex justify-center mt-6">
           <div className="flex items-center space-x-2">
-            <input
-                type="checkbox"
-                id="resolve-refs"
-                checked={resolveRefs}
-                onChange={(e) => setResolveRefs(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            <Switch
+              checked={resolveRefs}
+              onCheckedChange={(e) => setResolveRefs(e)}
+              id="resolve-refs"
             />
             <label htmlFor="resolve-refs" className="text-sm font-medium text-gray-700">
               Resolve references
