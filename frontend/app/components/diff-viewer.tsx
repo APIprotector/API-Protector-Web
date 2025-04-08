@@ -4,14 +4,23 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
-import {X, ChevronDown, ChevronRight, LoaderPinwheel, Shell} from "lucide-react"
+import {X, ChevronDown, ChevronRight, Shell} from "lucide-react"
 import axios from "axios";
 import {Switch} from "~/components/ui/switch";
+import { Card, CardContent } from "~/components/ui/card"
 
 interface FileData {
   name: string
   content: any
   source: "upload" | "url"
+}
+
+interface DiffMetrics {
+  added: number
+  removed: number
+  changed: number
+  unchanged: number
+  total: number
 }
 
 interface DiffViewerProps {
@@ -35,6 +44,14 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [showUnchanged, setShowUnchanged] = useState(true)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
+  const [metrics, setMetrics] = useState<DiffMetrics>({
+    added: 0,
+    removed: 0,
+    changed: 0,
+    unchanged: 0,
+    total: 0,
+  })
+  const [activeTab, setActiveTab] = useState("diff")
 
   useEffect(() => {
     let result
@@ -57,7 +74,9 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           node.children.forEach(collectExpandedNodes)
         }
       }
-
+      // Calculate metrics
+      const calculatedMetrics = calculateMetrics(result)
+      setMetrics(calculatedMetrics)
       collectExpandedNodes(result)
       setExpandedNodes(nodesToExpand)
       setDiffTree(result)
@@ -65,6 +84,47 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     })
 
   }, [file1, file2])
+
+
+  const calculateMetrics = (node: DiffNode): DiffMetrics => {
+    const metrics: DiffMetrics = {
+      added: 0,
+      removed: 0,
+      changed: 0,
+      unchanged: 0,
+      total: 0,
+    }
+
+    // Helper function to recursively count nodes
+    const countNodes = (node: DiffNode) => {
+      // Count leaf nodes
+      if (!node.children || node.children.length === 0) {
+        metrics.total++
+        switch (node.type) {
+          case "added":
+            metrics.added++
+            break
+          case "removed":
+            metrics.removed++
+            break
+          case "changed":
+            metrics.changed++
+            break
+          case "unchanged":
+            metrics.unchanged++
+            break
+        }
+      }
+
+      // Recursively process children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(countNodes)
+      }
+    }
+
+    countNodes(node)
+    return metrics
+  }
 
   useEffect(() => {
     // Disable scrolling on body when modal is open
@@ -175,6 +235,70 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     )
   }
 
+
+  const renderMetricsView = () => {
+    const { added, removed, changed, unchanged, total } = metrics
+    const changedTotal = added + removed + changed
+    const changedPercentage = total > 0 ? Math.round((changedTotal / total) * 100) : 0
+
+    return (
+      <div className="p-4">
+        <h3 className="text-lg font-medium mb-4">Comparison Metrics</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Card>
+            <CardContent className="pt-6">
+              <h4 className="text-sm font-medium text-gray-500 mb-2">Summary</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Total nodes:</span>
+                  <span className="font-medium">{total}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Changed nodes:</span>
+                  <span className="font-medium">{changedTotal}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Unchanged nodes:</span>
+                  <span className="font-medium">{unchanged}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <h4 className="text-sm font-medium text-gray-500 mb-2">Change Details</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                    Added:
+                  </span>
+                  <span className="font-medium">{added}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                    Removed:
+                  </span>
+                  <span className="font-medium">{removed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+                    Modified:
+                  </span>
+                  <span className="font-medium">{changed}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   const getNodeBackground = (type: string) => {
     switch (type) {
       case "added":
@@ -221,9 +345,25 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-bold">File Comparison Results</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={activeTab === "diff" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("diff")}
+            >
+              Diff View
+            </Button>
+            <Button
+              variant={activeTab === "metrics" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("metrics")}
+            >
+              Metrics
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <div className="p-4 border-b bg-gray-50">
@@ -254,38 +394,53 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             </div>
           </div>
         </div>
-
-        <div className="flex-1 overflow-auto p-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
-              <p className="text-gray-500 text-xl" >Analyzing differences...</p>
-            </div>
-          ) : diffTree?.type === "unchanged" ? (
-              <>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {activeTab === "diff" && (
+            <div className="flex-1 overflow-auto p-4">
+              {isLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-500">No differences found. The files are identical.</p>
+                  <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
+                  <p className="text-gray-500 text-xl" >Analyzing differences...</p>
                 </div>
+              ) : diffTree?.type === "unchanged" ? (
+                  <>
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500">No differences found. The files are identical.</p>
+                    </div>
+                    <div className="text-sm">
+                      {diffTree.children?.map((child, index) =>
+                          renderDiffTree(child, 1, index === (diffTree.children?.length || 0) - 1),
+                      )}
+                    </div>
+                  </>
+              ) : !!diffTree ? (
                 <div className="text-sm">
                   {diffTree.children?.map((child, index) =>
-                      renderDiffTree(child, 1, index === (diffTree.children?.length || 0) - 1),
+                    renderDiffTree(child, 1, index === (diffTree.children?.length || 0) - 1),
                   )}
                 </div>
-              </>
-          ) : !!diffTree ? (
-            <div className="text-sm">
-              {diffTree.children?.map((child, index) =>
-                renderDiffTree(child, 1, index === (diffTree.children?.length || 0) - 1),
+              ) : (
+                  <div className="flex items-center justify-center h-full">
+                      <p className="text-red-500">An Error Occurred :/</p>
+                  </div>
               )}
             </div>
-          ) : (
-              <div className="flex items-center justify-center h-full">
-                  <p className="text-red-500">An Error Occurred :/</p>
-              </div>
           )}
+        {activeTab === "metrics" && (
+          <div className="flex-1 overflow-auto">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full p-4">
+                <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
+                <p className="text-sm text-gray-500">Calculating metrics...</p>
+              </div>
+            ) : (
+              renderMetricsView()
+            )}
+          </div>
+        )}
         </div>
-
         <div className="p-4 border-t flex justify-between items-center">
+          {activeTab === "diff" && (
           <div className="flex items-center space-x-2">
             <Switch
               checked={showUnchanged}
@@ -295,7 +450,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             <label htmlFor="hide-unchanged" className="text-sm font-medium cursor-pointer">
               Hide unchanged nodes
             </label>
-          </div>
+          </div>)}
+          {activeTab === "metrics" && <div></div>}
           <Button onClick={onClose}>Close</Button>
         </div>
       </div>
