@@ -39,6 +39,10 @@ interface DiffNode {
   isExpanded?: boolean
 }
 
+interface Resp {
+  display: DiffNode
+}
+
 export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [diffTree, setDiffTree] = useState<DiffNode | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -60,7 +64,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       previous: file1.content,
       current: file2.content
     }).then((response) => {
-      result = response.data as DiffNode
+      result = response.data as Resp
 
       // Initially expand all nodes that have changes
       const nodesToExpand = new Set<string>()
@@ -75,11 +79,11 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
         }
       }
       // Calculate metrics
-      const calculatedMetrics = calculateMetrics(result)
+      const calculatedMetrics = calculateMetrics(result.display)
       setMetrics(calculatedMetrics)
-      collectExpandedNodes(result)
+      collectExpandedNodes(result.display)
       setExpandedNodes(nodesToExpand)
-      setDiffTree(result)
+      setDiffTree(result.display)
       setIsLoading(false)
     })
 
@@ -239,7 +243,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const renderMetricsView = () => {
     const { added, removed, changed, unchanged, total } = metrics
     const changedTotal = added + removed + changed
-    const changedPercentage = total > 0 ? Math.round((changedTotal / total) * 100) : 0
 
     return (
       <div className="p-4">
