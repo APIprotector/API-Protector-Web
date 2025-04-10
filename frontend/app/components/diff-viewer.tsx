@@ -4,15 +4,44 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
-import {X, ChevronDown, ChevronRight, Shell} from "lucide-react"
+import {X, ChevronDown, ChevronRight, Shell, CheckCircle2} from "lucide-react"
 import axios from "axios";
 import {Switch} from "~/components/ui/switch";
-import { Card, CardContent } from "~/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import { Badge } from "~/components/ui/badge"
 
 interface FileData {
   name: string
   content: any
   source: "upload" | "url"
+}
+
+interface ApiChanges {
+  title?: string
+  compatible?: boolean
+  newEndpoints?: ApiEndpoint[]
+  missingEndpoints?: ApiEndpoint[]
+  deprecatedEndpoints?: ApiEndpoint[]
+  changedOperations?: ApiOperation[]
+  changedSchemas?: any[]
+}
+
+interface ApiEndpoint {
+  method: string
+  path: string
+  summary?: string
+}
+
+interface ApiOperation {
+  compatible: boolean
+  method: string
+  path: string
+  summary: string | null
+  description: string | null
+  operationId: string | null
+  parameters: any[]
+  requestBody: any[]
+  responses: any[]
 }
 
 interface DiffMetrics {
@@ -40,7 +69,8 @@ interface DiffNode {
 }
 
 interface Resp {
-  display: DiffNode
+  display: DiffNode,
+  changes: ApiChanges
 }
 
 export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
@@ -55,6 +85,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     unchanged: 0,
     total: 0,
   })
+  const [apiChanges, setApiChanges] = useState<ApiChanges | null>(null)
   const [activeTab, setActiveTab] = useState("diff")
 
   useEffect(() => {
@@ -80,6 +111,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       }
       // Calculate metrics
       const calculatedMetrics = calculateMetrics(result.display)
+      setApiChanges(result.changes)
       setMetrics(calculatedMetrics)
       collectExpandedNodes(result.display)
       setExpandedNodes(nodesToExpand)
@@ -151,7 +183,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     })
   }
 
-  const renderDiffTree = (node: DiffNode, level = 0, isLastChild = true) => {
+  const renderDiffTree = (node: DiffNode, level = 0) => {
     const indent = level * 20
     const isExpanded = expandedNodes.has(node.path)
     const hasChildren = node.children && node.children.length > 0
@@ -223,8 +255,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
         {/* Render children if expanded */}
         {hasChildren && isExpanded && (
           <div>
-            {node.children!.map((child, index) =>
-              renderDiffTree(child, level + 1, index === node.children!.length - 1),
+            {node.children!.map((child, _) =>
+              renderDiffTree(child, level + 1),
             )}
             {!isPrimitive && (
               <div className={`font-mono py-1 ${getTextColor(node.type)}`} style={{ paddingLeft: `${indent}px` }}>
@@ -239,6 +271,239 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     )
   }
 
+
+  const renderApiChangesView = () => {
+    if (!apiChanges) {
+      return (
+        <div className="flex items-center justify-center h-full p-4">
+          <p className="text-gray-500">No API changes data available.</p>
+        </div>
+      )
+    }
+
+    const { compatible, newEndpoints, missingEndpoints, deprecatedEndpoints, changedOperations, changedSchemas } =
+      apiChanges
+
+    return (
+      <div className="p-4 space-y-6">
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-lg font-medium">API Changes</h3>
+          {compatible !== undefined && (
+            <Badge variant={compatible ? "outline" : "destructive"} className="ml-2">
+              {compatible ? "Compatible" : "Breaking Changes"}
+            </Badge>
+          )}
+        </div>
+
+        {/* New Endpoints */}
+        {newEndpoints && newEndpoints.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center">
+                <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                New Endpoints ({newEndpoints.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {newEndpoints.map((endpoint, index) => (
+                  <div key={`new-${index}`} className="p-3 bg-green-50 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-green-600">{endpoint.method}</Badge>
+                      <code className="text-sm font-mono">{endpoint.path}</code>
+                    </div>
+                    {endpoint.summary && <p className="text-sm mt-1 text-gray-600">{endpoint.summary}</p>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Missing Endpoints */}
+        {missingEndpoints && missingEndpoints.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center">
+                <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                Removed Endpoints ({missingEndpoints.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {missingEndpoints.map((endpoint, index) => (
+                  <div key={`missing-${index}`} className="p-3 bg-red-50 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-red-600">{endpoint.method}</Badge>
+                      <code className="text-sm font-mono">{endpoint.path}</code>
+                    </div>
+                    {endpoint.summary && <p className="text-sm mt-1 text-gray-600">{endpoint.summary}</p>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Deprecated Endpoints */}
+        {deprecatedEndpoints && deprecatedEndpoints.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center">
+                <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+                Deprecated Endpoints ({deprecatedEndpoints.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {deprecatedEndpoints.map((endpoint, index) => (
+                  <div key={`deprecated-${index}`} className="p-3 bg-amber-50 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-amber-600">{endpoint.method}</Badge>
+                      <code className="text-sm font-mono">{endpoint.path}</code>
+                    </div>
+                    {endpoint.summary && <p className="text-sm mt-1 text-gray-600">{endpoint.summary}</p>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Changed Operations */}
+        {changedOperations && changedOperations.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center">
+                <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+                Modified Endpoints ({changedOperations.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {changedOperations.map((operation, index) => (
+                  <div key={`operation-${index}`} className="p-3 bg-blue-50 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-blue-600">{operation.method}</Badge>
+                        <code className="text-sm font-mono">{operation.path}</code>
+                      </div>
+                      {operation.compatible !== undefined && (
+                        <Badge variant={operation.compatible ? "outline" : "destructive"} className="ml-2">
+                          {operation.compatible ? "Compatible" : "Breaking"}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {operation.summary && <p className="text-sm mt-1 text-gray-600">{operation.summary}</p>}
+
+                    {/* Request Body Changes */}
+                    {operation.requestBody && operation.requestBody.length > 0 && (
+                      <div className="mt-2">
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">Request Body Changes:</h4>
+                        <div className="space-y-1">
+                          {operation.requestBody.map((rb, rbIndex) => (
+                            <div key={`rb-${rbIndex}`} className="text-xs">
+                              <Badge variant="outline" className="mr-1">
+                                {rb.contentType}
+                              </Badge>
+                              <span className="text-gray-600">{rb.action === "change" ? "Modified" : rb.action}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Response Changes */}
+                    {operation.responses && operation.responses.length > 0 && (
+                      <div className="mt-2">
+                        <h4 className="text-xs font-medium text-gray-500 mb-1">Response Changes:</h4>
+                        <div className="space-y-1">
+                          {operation.responses.map((resp, respIndex) => (
+                            <div key={`resp-${respIndex}`} className="text-xs">
+                              <Badge variant="outline" className="mr-1">
+                                {resp.code}
+                              </Badge>
+                              <span className="text-gray-600">
+                                {resp.action === "change" ? "Modified" : resp.action}
+                              </span>
+                              {resp.mediaTypes && resp.mediaTypes.length > 0 && (
+                                <span className="text-gray-500 ml-1">
+                                  ({resp.mediaTypes.map((mt) => mt.contentType).join(", ")})
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Changed Schemas */}
+        {changedSchemas && changedSchemas.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center">
+                <span className="w-3 h-3 rounded-full bg-purple-500 mr-2"></span>
+                Modified Schemas ({changedSchemas.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {changedSchemas.map((schema, index) => (
+                  <div key={`schema-${index}`} className="p-3 bg-purple-50 rounded-md">
+                    <h4 className="text-sm font-medium">Schema #{index + 1}</h4>
+
+                    {schema.changedProperties && schema.changedProperties.length > 0 && (
+                      <div className="mt-2">
+                        <h5 className="text-xs font-medium text-gray-500">Changed Properties:</h5>
+                        <div className="space-y-1 mt-1">
+                          {schema.changedProperties.map((prop, propIndex) => (
+                            <div key={`prop-${propIndex}`} className="text-xs">
+                              {prop.changedType && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-600">Type:</span>
+                                  <Badge variant="outline" className="mr-1">
+                                    {prop.changedType.before}
+                                  </Badge>
+                                  <span>→</span>
+                                  <Badge variant="outline">{prop.changedType.after}</Badge>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No changes found */}
+        {(!newEndpoints || newEndpoints.length === 0) &&
+          (!missingEndpoints || missingEndpoints.length === 0) &&
+          (!deprecatedEndpoints || deprecatedEndpoints.length === 0) &&
+          (!changedOperations || changedOperations.length === 0) &&
+          (!changedSchemas || changedSchemas.length === 0) && (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <CheckCircle2 className="h-12 w-12 text-green-500 mb-2" />
+              <h3 className="text-lg font-medium">No API Changes Detected</h3>
+              <p className="text-gray-500 mt-1">
+                The API specifications are identical or no changes data is available.
+              </p>
+            </div>
+          )}
+      </div>
+    )
+  }
 
   const renderMetricsView = () => {
     const { added, removed, changed, unchanged, total } = metrics
@@ -363,6 +628,9 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             >
               Metrics
             </Button>
+            <Button variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
+              API Changes
+            </Button>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
@@ -411,15 +679,15 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                       <p className="text-gray-500">No differences found. The files are identical.</p>
                     </div>
                     <div className="text-sm">
-                      {diffTree.children?.map((child, index) =>
-                          renderDiffTree(child, 1, index === (diffTree.children?.length || 0) - 1),
+                      {diffTree.children?.map((child, _) =>
+                          renderDiffTree(child, 1),
                       )}
                     </div>
                   </>
               ) : !!diffTree ? (
                 <div className="text-sm">
-                  {diffTree.children?.map((child, index) =>
-                    renderDiffTree(child, 1, index === (diffTree.children?.length || 0) - 1),
+                  {diffTree.children?.map((child, _) =>
+                    renderDiffTree(child, 1),
                   )}
                 </div>
               ) : (
@@ -441,6 +709,19 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             )}
           </div>
         )}
+
+        {activeTab === "api" && (
+          <div className="flex-1 overflow-auto">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full p-4">
+                <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
+                <p className="text-sm text-gray-500">Analyzing API changes...</p>
+              </div>
+            ) : (
+              renderApiChangesView()
+            )}
+          </div>
+        )}
         </div>
         <div className="p-4 border-t flex justify-between items-center">
           {activeTab === "diff" && (
@@ -454,7 +735,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               Hide unchanged nodes
             </label>
           </div>)}
-          {activeTab === "metrics" && <div></div>}
+          {(activeTab === "metrics" || activeTab === "api") && <div></div>}
           <Button onClick={onClose}>Close</Button>
         </div>
       </div>
