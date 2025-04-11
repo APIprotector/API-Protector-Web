@@ -1,5 +1,6 @@
 package com.APIprotector.apiprotector.library;
 
+import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import org.openapitools.openapidiff.core.exception.RendererException;
@@ -140,7 +141,28 @@ public class JsonRenderer implements Render {
                         "compatible", mediaType.isCompatible(),
                         "schema", schemaChanges(mediaType.getSchema())
                 )));
+        return content;
+    }
 
+    private List<Map<String, Object>> contentChanges(ChangedContent changedContent, Content oldContent, Content newContent) {
+        List<Map<String, Object>> content = new ArrayList<>();
+        if (changedContent == null) return content;
+        changedContent.getIncreased().forEach((type, value) ->
+                content.add(Map.of("action", "add", "contentType", type)));
+
+        changedContent.getMissing().forEach((type, value) ->
+                content.add(Map.of("action", "delete", "contentType", type)));
+
+        changedContent.getChanged().forEach((type, mediaType) -> {
+            content.add(Map.of(
+                    "action", "change",
+                    "contentType", type,
+                    "compatible", mediaType.isCompatible(),
+                    "schema", schemaChanges(mediaType.getSchema()
+                            ,oldContent.get(type).getSchema()
+                            ,newContent.get(type).getSchema())
+            ));
+        });
         return content;
     }
 
@@ -157,7 +179,9 @@ public class JsonRenderer implements Render {
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("action", "change");
             entry.put("code", code);
-            entry.put("mediaTypes", contentChanges(changed.getContent()));
+            entry.put("mediaTypes", contentChanges(changed.getContent()
+                    ,changed.getNewApiResponse().getContent()
+                    ,changed.getOldApiResponse().getContent()));
             result.add(entry);
         });
 
@@ -220,7 +244,69 @@ public class JsonRenderer implements Render {
         } else {
             entry.put("changedProperties", new ArrayList<>());
         }
+        return entry;
+    }
 
+    private Map<String, Object> schemaChanges(ChangedSchema schema, Schema<?> oldSchema, Schema<?> newSchema) {
+        Map<String, Object> entry = new LinkedHashMap<>();
+        if (oldSchema.get$ref() != null && newSchema.get$ref() != null) {
+            String oldPath = oldSchema.get$ref();
+            String newPath = newSchema.get$ref();
+            String oldTitle = oldPath.substring(oldSchema.get$ref().lastIndexOf("/") + 1);
+            String newTitle = newPath.substring(newSchema.get$ref().lastIndexOf("/") + 1);
+            entry.put("ref", oldPath.equals(newPath) ? oldPath : null);
+            entry.put("title", oldTitle.equals(newTitle) ?  oldTitle : null);
+
+        }
+        if (schema.isChangedType()) {
+            entry.put("changedType", Map.of(
+                    "before", schema.getOldSchema() != null ? schema.getOldSchema().getType() : null,
+                    "after", schema.getNewSchema() != null ? schema.getNewSchema().getType() : null
+            ));
+        } else {
+            entry.put("changedType", new ArrayList<>());
+        }
+
+        if (schema.isChangeFormat()) {
+            entry.put("changedFormat", Map.of(
+                    "before", schema.getOldSchema() != null ? schema.getOldSchema().getFormat() : null,
+                    "after", schema.getNewSchema() != null ? schema.getNewSchema().getFormat() : null
+            ));
+        } else {
+            entry.put("changedFormat", new ArrayList<>());
+        }
+        if (schema.isChangeDefault()) {
+            entry.put("changedDefault", Map.of(
+                    "before", schema.getOldSchema() != null ? schema.getOldSchema().getDefault() : null,
+                    "after", schema.getNewSchema() != null ? schema.getNewSchema().getDefault() : null
+            ));
+        } else {
+            entry.put("changedDefault", new ArrayList<>());
+        }
+
+        if (schema.isChangeDeprecated()) {
+            entry.put("changedDeprecated", Map.of(
+                    "before", schema.getOldSchema() != null ? schema.getOldSchema().getDeprecated() : null,
+                    "after", schema.getNewSchema() != null ? schema.getNewSchema().getDeprecated() : null
+            ));
+        } else {
+            entry.put("changedDefault", new ArrayList<>());
+        }
+
+        if (!schema.getChangedProperties().isEmpty()) {
+            List<Map<String, Object>> changedProps = new ArrayList<>();
+            for (ChangedSchema changed : schema.getChangedProperties().values()) {
+                Map<String, Object> nestedChange = schemaChanges(changed);
+                if (!nestedChange.isEmpty()) {
+                    changedProps.add(nestedChange);
+                }
+            }
+            if (!changedProps.isEmpty()) {
+                entry.put("changedProperties", changedProps);
+            }
+        } else {
+            entry.put("changedProperties", new ArrayList<>());
+        }
         return entry;
     }
 
