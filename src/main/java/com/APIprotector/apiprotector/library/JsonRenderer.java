@@ -15,6 +15,7 @@ import java.util.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class JsonRenderer implements Render {
     protected ChangedOpenApi diff;
@@ -203,10 +204,14 @@ public class JsonRenderer implements Render {
 
         if (!schema.getChangedProperties().isEmpty()) {
             List<Map<String, Object>> changedProps = new ArrayList<>();
-            for (ChangedSchema changed : schema.getChangedProperties().values()) {
-                Map<String, Object> nestedChange = schemaChanges(changed);
+            for (Map.Entry<String, ChangedSchema> changed : schema.getChangedProperties().entrySet()) {
+                Map<String, Object> nestedChange = schemaChanges(changed.getValue());
                 if (!nestedChange.isEmpty()) {
                     changedProps.add(nestedChange);
+                    changedProps.add(Map.of(
+                            "name", changed.getKey(),
+                            "changes", compareSchemas(schema.getOldSchema().getProperties().get(changed.getKey()),schema.getNewSchema().getProperties().get(changed.getKey()))
+                    ));
                 }
             }
             if (!changedProps.isEmpty()) {
@@ -219,4 +224,51 @@ public class JsonRenderer implements Render {
         return entry;
     }
 
+    public Map<String, Map<String, Object>> compareSchemas(Schema<?> s1, Schema<?> s2) {
+        Map<String, Map<String, Object>> changes = new LinkedHashMap<>();
+
+        if (s1 == null) {
+            return changes;
+        }
+        if (s2 == null) {
+            return changes;
+        }
+
+        BiConsumer<String, Object[]> addDiff = (field, values) -> {
+            if (!Objects.equals(values[0], values[1])) {
+                changes.put(field, Map.of(
+                        "before", values[0],
+                        "after", values[1]
+                ));
+            }
+        };
+
+        addDiff.accept("title", new Object[]{s1.getTitle(), s2.getTitle()});
+        addDiff.accept("type", new Object[]{s1.getType(), s2.getType()});
+        addDiff.accept("format", new Object[]{s1.getFormat(), s2.getFormat()});
+        addDiff.accept("description", new Object[]{s1.getDescription(), s2.getDescription()});
+        addDiff.accept("pattern", new Object[]{s1.getPattern(), s2.getPattern()});
+        addDiff.accept("maximum", new Object[]{s1.getMaximum(), s2.getMaximum()});
+        addDiff.accept("minimum", new Object[]{s1.getMinimum(), s2.getMinimum()});
+        addDiff.accept("exclusiveMaximum", new Object[]{s1.getExclusiveMaximum(), s2.getExclusiveMaximum()});
+        addDiff.accept("exclusiveMinimum", new Object[]{s1.getExclusiveMinimum(), s2.getExclusiveMinimum()});
+        addDiff.accept("maxLength", new Object[]{s1.getMaxLength(), s2.getMaxLength()});
+        addDiff.accept("minLength", new Object[]{s1.getMinLength(), s2.getMinLength()});
+        addDiff.accept("multipleOf", new Object[]{s1.getMultipleOf(), s2.getMultipleOf()});
+        addDiff.accept("required", new Object[]{s1.getRequired(), s2.getRequired()});
+        addDiff.accept("readOnly", new Object[]{s1.getReadOnly(), s2.getReadOnly()});
+        addDiff.accept("writeOnly", new Object[]{s1.getWriteOnly(), s2.getWriteOnly()});
+        addDiff.accept("nullable", new Object[]{s1.getNullable(), s2.getNullable()});
+        addDiff.accept("deprecated", new Object[]{s1.getDeprecated(), s2.getDeprecated()});
+
+        // Compare property keys only, not deep comparison
+        Set<String> s1Keys = s1.getProperties() != null ? s1.getProperties().keySet() : null;
+        Set<String> s2Keys = s2.getProperties() != null ? s2.getProperties().keySet() : null;
+        addDiff.accept("properties", new Object[]{s1Keys, s2Keys});
+
+        // Shallow item diff
+        addDiff.accept("items", new Object[]{s1.getItems(), s2.getItems()});
+
+        return changes;
+    }
 }
