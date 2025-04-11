@@ -87,6 +87,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   })
   const [apiChanges, setApiChanges] = useState<ApiChanges | null>(null)
   const [activeTab, setActiveTab] = useState("diff")
+  const [isLargeDiff, setIsLargeDiff] = useState(false)
+  const [showLargeDiff, setShowLargeDiff] = useState(false)
 
   useEffect(() => {
     let result
@@ -113,6 +115,16 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       const calculatedMetrics = calculateMetrics(result.display)
       setApiChanges(result.changes)
       setMetrics(calculatedMetrics)
+
+      const isLarge =
+        calculatedMetrics.changed + calculatedMetrics.added + calculatedMetrics.removed > 100 ||
+        (calculatedMetrics.total > 0 &&
+          (calculatedMetrics.changed + calculatedMetrics.added + calculatedMetrics.removed) / calculatedMetrics.total >
+          0.5)
+
+      setIsLargeDiff(isLarge)
+      setShowLargeDiff(!isLarge)
+
       collectExpandedNodes(result.display)
       setExpandedNodes(nodesToExpand)
       setDiffTree(result.display)
@@ -684,6 +696,20 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                       )}
                     </div>
                   </>
+              ) : isLargeDiff && !showLargeDiff ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="text-center max-w-md">
+                    <h3 className="text-lg font-medium mb-2">Large Difference Detected</h3>
+                    <p className="text-gray-600 mb-4">
+                      These files have substantial differences ({metrics.added + metrics.removed + metrics.changed}{" "}
+                      changes), which may make the diff view difficult to navigate.
+                    </p>
+                    <p className="text-gray-600 mb-6">
+                      Consider using the API Changes or Metrics tabs for a more structured overview.
+                    </p>
+                    <Button onClick={() => setShowLargeDiff(true)}>Show Full Diff Anyway</Button>
+                  </div>
+                </div>
               ) : !!diffTree ? (
                 <div className="text-sm">
                   {diffTree.children?.map((child, _) =>
