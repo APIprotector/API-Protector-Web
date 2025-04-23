@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import DiffViewer from "./diff-viewer"
 import { parseFileContent } from "~/lib/file-parser"
 import {Switch} from "~/components/ui/switch";
+import {readFileContent} from "~/lib/utils";
 
 interface FileData {
   name: string
@@ -89,15 +90,6 @@ export default function FileComparisonTool() {
     } catch (err) {
       setError(`Error parsing file: ${(err as Error).message}`)
     }
-  }
-
-  const readFileContent = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = (e) => resolve(e.target?.result as string)
-      reader.onerror = (e) => reject(new Error("Failed to read file"))
-      reader.readAsText(file)
-    })
   }
 
   const fetchFileFromUrl = async (url: string): Promise<{ name: string; content: any; rawContent: string; fileExtension: string }> => {
