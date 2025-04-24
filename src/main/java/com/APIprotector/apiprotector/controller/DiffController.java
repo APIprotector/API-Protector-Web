@@ -1,6 +1,6 @@
 package com.APIprotector.apiprotector.controller;
 
-import com.APIprotector.apiprotector.library.CompositeDiff;
+import com.apiprotector.core.CompositeDiff;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
