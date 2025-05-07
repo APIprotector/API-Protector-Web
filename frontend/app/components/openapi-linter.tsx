@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
 import { Textarea } from "~/components/ui/textarea"
 import { readFileContent } from "~/lib/utils";
 import {type ISpectralDiagnostic, Ruleset, Spectral} from "@stoplight/spectral-core";
-import { oas, asyncapi } from "@stoplight/spectral-rulesets";
+import { oas, asyncapi, arazzo } from "@stoplight/spectral-rulesets";
 import {DiagnosticSeverity} from "@stoplight/types";
 import {parseFileContent} from "~/lib/file-parser";
 import {bundleAndLoadRuleset} from "@stoplight/spectral-ruleset-bundler/with-loader";
@@ -45,7 +45,7 @@ export default function OpenApiLinter() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lintResults, setLintResults] = useState<LintResult[] | null>(null)
-  const [ruleset, setRuleset] = useState<"spectral:oas" | "spectral:asyncapi" | "custom">("spectral:oas")
+  const [ruleset, setRuleset] = useState<"spectral:oas" | "spectral:asyncapi" | "spectral:arazzo" | "custom">("spectral:oas")
   const [customRulesetUrl, setCustomRulesetUrl] = useState("")
   const [customRuleset, setCustomRuleset] = useState("")
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -125,6 +125,9 @@ export default function OpenApiLinter() {
           break
         case "spectral:asyncapi":
           spectral.setRuleset(asyncapi)
+          break
+        case "spectral:arazzo":
+          spectral.setRuleset(arazzo)
           break
         case "custom":
           if (activeRuleTab === "url" && customRulesetUrl) {
@@ -435,6 +438,15 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
+                    <RadioGroupItem value="spectral:arazzo" id="spectral-arazzo" />
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="spectral-arazzo" className="font-medium">
+                        Spectral:Arazzo
+                      </Label>
+                      <p className="text-sm text-gray-500">Ruleset for Arazzo specification validation.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
                     <RadioGroupItem value="spectral:asyncapi" id="spectral-asyncapi" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-asyncapi" className="font-medium">
@@ -450,31 +462,32 @@ export default function OpenApiLinter() {
                         Custom Ruleset
                       </Label>
                       <p className="text-sm text-gray-500 mb-2">
-                        Provide a URL to a custom ruleset or paste your ruleset directly.
+                        {/*Provide a URL to a custom ruleset or paste your ruleset directly.*/}
+                        Provide a URL to a custom ruleset.
                       </p>
-                      <Tabs defaultValue="url" className="w-full" value={activeRuleTab} onValueChange={(value) => {setActiveRuleTab(value as any);}}>
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="url">URL</TabsTrigger>
-                          <TabsTrigger value="paste">Paste</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="url" className="pt-2">
+                      {/*<Tabs defaultValue="url" className="w-full" value={activeRuleTab} onValueChange={(value) => {setActiveRuleTab(value as any);}}>*/}
+                      {/*  <TabsList className="grid w-full grid-cols-2">*/}
+                      {/*    <TabsTrigger value="url">URL</TabsTrigger>*/}
+                      {/*    <TabsTrigger value="paste">Paste</TabsTrigger>*/}
+                      {/*  </TabsList>*/}
+                      {/*  <TabsContent value="url" className="pt-2">*/}
                           <Input
                             placeholder="https://example.com/ruleset.json"
                             value={customRulesetUrl}
                             onChange={(e) => setCustomRulesetUrl(e.target.value)}
                             disabled={ruleset !== "custom"}
                           />
-                        </TabsContent>
-                        <TabsContent value="paste" className="pt-2">
-                          <Textarea
-                            placeholder="Paste your ruleset here..."
-                            className="min-h-[150px] font-mono text-sm"
-                            value={customRuleset}
-                            onChange={(e) => setCustomRuleset(e.target.value)}
-                            disabled={ruleset !== "custom"}
-                          />
-                        </TabsContent>
-                      </Tabs>
+                      {/*  </TabsContent>*/}
+                      {/*  <TabsContent value="paste" className="pt-2">*/}
+                      {/*    <Textarea*/}
+                      {/*      placeholder="Paste your ruleset here..."*/}
+                      {/*      className="min-h-[150px] font-mono text-sm"*/}
+                      {/*      value={customRuleset}*/}
+                      {/*      onChange={(e) => setCustomRuleset(e.target.value)}*/}
+                      {/*      disabled={ruleset !== "custom"}*/}
+                      {/*    />*/}
+                      {/*  </TabsContent>*/}
+                      {/*</Tabs>*/}
                     </div>
                   </div>
                 </RadioGroup>
@@ -515,7 +528,11 @@ export default function OpenApiLinter() {
                 ? "Spectral:OAS"
                 : ruleset === "spectral:asyncapi"
                   ? "Spectral:AsyncAPI"
-                  : "Custom Ruleset"}
+                  : ruleset === "spectral:arazzo"
+                    ? "Spectral:Arazzo"
+                    : ruleset === "custom"
+                      ? "Custom Ruleset"
+                      : ruleset}
             </span>
           </div>
         </div>
