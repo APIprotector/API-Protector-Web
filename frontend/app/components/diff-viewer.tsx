@@ -70,7 +70,8 @@ interface DiffNode {
 
 interface Resp {
   display: DiffNode,
-  changes: ApiChanges
+  changes: ApiChanges,
+  ai_summary: any
 }
 
 export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
@@ -86,6 +87,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     total: 0,
   })
   const [apiChanges, setApiChanges] = useState<ApiChanges | null>(null)
+  const [aiSummary, setAiSummary] = useState<String>("")
   const [activeTab, setActiveTab] = useState("diff")
   const [isLargeDiff, setIsLargeDiff] = useState(false)
   const [showLargeDiff, setShowLargeDiff] = useState(false)
@@ -115,6 +117,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       const calculatedMetrics = calculateMetrics(result.display)
       setApiChanges(result.changes)
       setMetrics(calculatedMetrics)
+      setAiSummary(result.ai_summary)
 
       const isLarge =
         calculatedMetrics.changed + calculatedMetrics.added + calculatedMetrics.removed > 100 ||
@@ -643,6 +646,13 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             <Button variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
               API Changes
             </Button>
+            <Button
+              variant={activeTab === "ai" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("ai")}
+            >
+              AI Summary
+            </Button>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
@@ -681,10 +691,10 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           {activeTab === "diff" && (
             <div className="flex-1 overflow-auto p-4">
               {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
-                  <p className="text-gray-500 text-xl" >Analyzing differences...</p>
-                </div>
+                  <div className="flex flex-col items-center justify-center h-full p-4">
+                    <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
+                    <p className="text-sm text-gray-500">Analyzing differences...</p>
+                  </div>
               ) : diffTree?.type === "unchanged" ? (
                   <>
                     <div className="flex items-center justify-center h-full">
@@ -748,6 +758,17 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             )}
           </div>
         )}
+
+        {activeTab === "ai" && (
+          <div className="flex-1 overflow-auto">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full p-4">
+                <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
+                <p className="text-sm text-gray-500">Getting AI summary...</p>
+              </div>
+            ) : (<p>{aiSummary}</p>)}
+          </div>
+        )}
         </div>
         <div className="p-4 border-t flex justify-between items-center">
           {activeTab === "diff" && (
@@ -761,7 +782,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               Hide unchanged nodes
             </label>
           </div>)}
-          {(activeTab === "metrics" || activeTab === "api") && <div></div>}
+          {(activeTab === "metrics" || activeTab === "api" || activeTab === "ai") && <div></div>}
           <Button onClick={onClose}>Close</Button>
         </div>
       </div>

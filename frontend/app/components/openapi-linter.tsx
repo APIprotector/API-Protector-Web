@@ -18,7 +18,6 @@ import { oas, asyncapi } from "@stoplight/spectral-rulesets";
 import {DiagnosticSeverity} from "@stoplight/types";
 import {parseFileContent} from "~/lib/file-parser";
 import {bundleAndLoadRuleset} from "@stoplight/spectral-ruleset-bundler/with-loader";
-import { fetch } from 'cross-fetch';
 import * as fs from "node:fs";
 import { parse } from '@stoplight/yaml'
 
