@@ -13,6 +13,9 @@ import { Label } from "~/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
 import { Textarea } from "~/components/ui/textarea"
 import { readFileContent } from "~/lib/utils";
+import {type ISpectralDiagnostic, Spectral} from "@stoplight/spectral-core";
+import { oas, asyncapi } from "@stoplight/spectral-rulesets";
+import {DiagnosticSeverity} from "@stoplight/types";
 
 interface LintResult {
   code: string
@@ -28,6 +31,11 @@ interface FileData {
   name: string
   content: string
   source: "upload" | "url"
+}
+
+const rulesets = {
+  "spectral:oas": oas,
+  "spectral:asyncapi": asyncapi
 }
 
 export default function OpenApiLinter() {
@@ -82,56 +90,50 @@ export default function OpenApiLinter() {
         throw new Error("Please provide an OpenAPI specification to validate")
       }
 
-      // Mock lint results
-      const mockResults: LintResult[] = [
-        {
-          code: "oas3-schema",
-          path: "$.info",
-          message: "Info object must have 'contact' object.",
-          severity: "warning",
-          line: 12,
-          column: 3,
-        },
-        {
-          code: "operation-success-response",
-          path: "$.paths./pets.get.responses",
-          message: "Operation must have at least one 2xx response.",
-          severity: "error",
-          line: 45,
-          column: 5,
-        },
-        {
-          code: "operation-description",
-          path: "$.paths./pets.post",
-          message: "Operation must have a description.",
-          severity: "info",
-          line: 67,
-          column: 3,
-        },
-        {
-          code: "info-contact",
-          path: "$.info",
-          message: "Info object should have 'contact' object.",
-          severity: "hint",
-          line: 10,
-          column: 1,
-        },
-        {
-          code: "oas3-api-servers",
-          path: "$",
-          message: "OpenAPI object must have at least one server defined.",
-          severity: "error",
-          line: 1,
-          column: 1,
-        },
-      ]
+      const spectral = new Spectral();
 
-      setLintResults(mockResults)
+      switch (ruleset){
+        case "spectral:oas":
+          spectral.setRuleset(oas)
+          break
+        case "spectral:asyncapi":
+          spectral.setRuleset(asyncapi)
+          break
+        case "custom":
+          if (customRulesetUrl) {
+            const customRulesetContent = await fetch(customRulesetUrl).then(res => res.json())
+            spectral.setRuleset(customRulesetContent)
+          } else if (customRuleset) {
+            const customRulesetContent = JSON.parse(customRuleset)
+            spectral.setRuleset(customRulesetContent)
+          } else {
+            throw new Error("Please provide a valid custom ruleset URL or content")
+          }
+          break
+      }
+      spectral.run(contentToValidate).then((re) => {
+        const lintResults = transformArray(re)
+        setLintResults(lintResults)
+      })
     } catch (err) {
       setError((err as Error).message)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function transformArray(inputArray: ISpectralDiagnostic[]): LintResult[] {
+    return inputArray.map(item => {
+      const pathString = '$.' + item.path.join('.');
+      return {
+        code: item.code,
+        path: pathString,
+        message: item.message,
+        severity: DiagnosticSeverity[item.severity].toString().toLowerCase(),
+        line: item.range.start.line + 1, // Adjust to 1-based indexing
+        column: item.range.start.character + 1, // Adjust to 1-based indexing
+      };
+    }) as LintResult[];
   }
 
   const getSeverityIcon = (severity: string) => {
