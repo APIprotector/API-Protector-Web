@@ -13,9 +13,14 @@ import { Label } from "~/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
 import { Textarea } from "~/components/ui/textarea"
 import { readFileContent } from "~/lib/utils";
-import {type ISpectralDiagnostic, Spectral} from "@stoplight/spectral-core";
+import {type ISpectralDiagnostic, Ruleset, Spectral} from "@stoplight/spectral-core";
 import { oas, asyncapi } from "@stoplight/spectral-rulesets";
 import {DiagnosticSeverity} from "@stoplight/types";
+import {parseFileContent} from "~/lib/file-parser";
+import {bundleAndLoadRuleset} from "@stoplight/spectral-ruleset-bundler/with-loader";
+import { fetch } from 'cross-fetch';
+import * as fs from "node:fs";
+import { parse } from '@stoplight/yaml'
 
 interface LintResult {
   code: string
@@ -33,15 +38,11 @@ interface FileData {
   source: "upload" | "url"
 }
 
-const rulesets = {
-  "spectral:oas": oas,
-  "spectral:asyncapi": asyncapi
-}
-
 export default function OpenApiLinter() {
   const [file, setFile] = useState<FileData | null>(null)
   const [url, setUrl] = useState("")
   const [activeTab, setActiveTab] = useState<"upload" | "url">("upload")
+  const [activeRuleTab, setActiveRuleTab] = useState<"paste" | "url">("url")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lintResults, setLintResults] = useState<LintResult[] | null>(null)
@@ -49,6 +50,34 @@ export default function OpenApiLinter() {
   const [customRulesetUrl, setCustomRulesetUrl] = useState("")
   const [customRuleset, setCustomRuleset] = useState("")
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  const fetchFileFromUrl = async (url: string, parse: boolean = false): Promise<string> => {
+    if (!url) {
+      throw new Error("Please enter a URL")
+    }
+
+    // Extract filename from URL
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname
+    const filename = pathname.substring(pathname.lastIndexOf("/") + 1)
+
+    // Check file extension
+    const fileExtension = filename.split(".").pop()?.toLowerCase()
+    if (!["json", "yaml", "yml"].includes(fileExtension || "")) {
+      throw new Error("Only JSON and YAML files are supported")
+    }
+
+    // Fetch the file
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.statusText}`)
+    }
+
+    if (!parse) {
+      return await response.text()
+    }
+    return parseFileContent(await response.text(), fileExtension || "")
+  }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null)
@@ -84,8 +113,7 @@ export default function OpenApiLinter() {
       } else if (activeTab === "url" && url) {
         // In a real implementation, we would fetch the URL here
         // For the mock, we'll simulate a delay and use mock data
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        contentToValidate = "Fetched from URL"
+        contentToValidate = await fetchFileFromUrl(url)
       } else {
         throw new Error("Please provide an OpenAPI specification to validate")
       }
@@ -100,12 +128,12 @@ export default function OpenApiLinter() {
           spectral.setRuleset(asyncapi)
           break
         case "custom":
-          if (customRulesetUrl) {
-            const customRulesetContent = await fetch(customRulesetUrl).then(res => res.json())
-            spectral.setRuleset(customRulesetContent)
-          } else if (customRuleset) {
-            const customRulesetContent = JSON.parse(customRuleset)
-            spectral.setRuleset(customRulesetContent)
+          if (activeRuleTab === "url" && customRulesetUrl) {
+            spectral.setRuleset(await bundleAndLoadRuleset(customRulesetUrl, { fs, fetch }))
+          } else if (activeRuleTab === "paste" && customRuleset) {
+            const parsedRuleset = parse(customRuleset) as Ruleset;
+            console.log(parsedRuleset)
+            spectral.setRuleset(parsedRuleset);
           } else {
             throw new Error("Please provide a valid custom ruleset URL or content")
           }
@@ -114,6 +142,8 @@ export default function OpenApiLinter() {
       spectral.run(contentToValidate).then((re) => {
         const lintResults = transformArray(re)
         setLintResults(lintResults)
+      }).catch((e) => {
+        console.warn(e)
       })
     } catch (err) {
       setError((err as Error).message)
@@ -200,7 +230,7 @@ export default function OpenApiLinter() {
     return (
       <Card className="h-full">
         <CardContent className="pt-6">
-          <Tabs defaultValue="upload" value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+          <Tabs defaultValue="upload" value={activeTab} onValueChange={(value) => {setActiveTab(value as any);}}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="upload">Upload File</TabsTrigger>
               <TabsTrigger value="url">URL</TabsTrigger>
@@ -423,7 +453,7 @@ export default function OpenApiLinter() {
                       <p className="text-sm text-gray-500 mb-2">
                         Provide a URL to a custom ruleset or paste your ruleset directly.
                       </p>
-                      <Tabs defaultValue="url" className="w-full">
+                      <Tabs defaultValue="url" className="w-full" value={activeRuleTab} onValueChange={(value) => {setActiveRuleTab(value as any);}}>
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger value="url">URL</TabsTrigger>
                           <TabsTrigger value="paste">Paste</TabsTrigger>
