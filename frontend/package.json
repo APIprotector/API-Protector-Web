@@ -10,10 +10,19 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.11",
+    "@radix-ui/react-label": "^2.1.4",
+    "@radix-ui/react-radio-group": "^1.3.4",
+    "@radix-ui/react-scroll-area": "^1.2.6",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-switch": "^1.1.3",
     "@radix-ui/react-tabs": "^1.1.3",
     "@react-router/node": "^7.3.0",
     "@react-router/serve": "^7.3.0",
+    "@stoplight/spectral-core": "^1.20.0",
+    "@stoplight/spectral-functions": "^1.10.1",
+    "@stoplight/spectral-parsers": "^1.0.5",
+    "@stoplight/spectral-ruleset-bundler": "^1.6.3",
     "@tailwindcss/postcss": "^4.0.12",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
@@ -24,6 +33,7 @@
     "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "react-router": "^7.3.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"

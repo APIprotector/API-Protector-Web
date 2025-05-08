@@ -14,8 +14,8 @@ export default function Navbar() {
             <NavLink to="/" className="text-sm text-gray-600 hover:text-primary">
               Home
             </NavLink>
-            <NavLink to="/compare" className="text-sm text-gray-600 hover:text-primary">
-              Compare
+            <NavLink to="/validate" className="text-sm text-gray-600 hover:text-primary">
+              Validate
             </NavLink>
           </nav>
         </div>

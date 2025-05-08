@@ -9,10 +9,25 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.APIprotector</groupId>
-	<artifactId>apiprotector</artifactId>
+	<artifactId>apiprotector-web</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>apiprotector</name>
 	<description>Demo project for APIprotector</description>
+
+	<repositories>
+		<repository>
+			<id>central</id>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+		<repository>
+			<id>github</id>
+			<url>https://maven.pkg.github.com/apiprotector/API-Protector</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
 	<url/>
 	<licenses>
 		<license/>
@@ -37,14 +52,19 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
-    		<groupId>io.github.java-diff-utils</groupId>
-    		<artifactId>java-diff-utils</artifactId>
-    		<version>4.15</version>
+			<groupId>com.apiprotector</groupId>
+			<artifactId>api-protector-core</artifactId>
+			<version>1.0.2-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 
