@@ -4,6 +4,7 @@ import com.APIprotector.apiprotector.service.OverviewService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +38,15 @@ public class OverviewController {
             return Mono.just(ResponseEntity.badRequest().body("Invalid JSON format in request body: " + e.getMessage()));
         }
 
-        return null;
+        return overviewService.getOverview(jsonContents)
+                .map(ResponseEntity::ok)
+                .onErrorResume(IllegalArgumentException.class, e ->
+                        Mono.just(ResponseEntity.badRequest().body("Client Error: " + e.getMessage()))
+                )
+                .onErrorResume(e -> {
+                    System.err.println("Controller Error: " + e.getMessage());
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Server error processing request. " + e.getMessage()));
+                });
     }
 }
