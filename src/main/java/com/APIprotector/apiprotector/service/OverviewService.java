@@ -1,11 +1,14 @@
 package com.APIprotector.apiprotector.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
@@ -31,7 +34,10 @@ public class OverviewService {
             throw new IllegalArgumentException("Prompt is empty or not configured");
         }
 
-        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
+        this.webClient = webClientBuilder
+                .baseUrl(baseUrl)
+                .defaultHeaders(headers -> headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .build();
         this.apiKey = apiKey;
         this.modelName = modelName;
         this.prompt = prompt;
@@ -64,6 +70,7 @@ public class OverviewService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(requestBody))
                 .retrieve()
-                .bodyToMono(String.class);
+                .bodyToMono(String.class)
+                .timeout(Duration.ofMinutes(5));
     }
 }
