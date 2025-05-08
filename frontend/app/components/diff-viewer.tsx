@@ -70,13 +70,26 @@ interface DiffNode {
 
 interface Resp {
   display: DiffNode,
-  changes: ApiChanges,
-  ai_summary: any
+  changes: ApiChanges
+}
+interface AIResp {
+  candidates: [
+    {
+      content: {
+        parts: [
+          {
+            text: string
+          }
+        ]
+      }
+    }
+  ]
 }
 
 export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [diffTree, setDiffTree] = useState<DiffNode | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingAI, setIsLoadingAI] = useState(true)
   const [showUnchanged, setShowUnchanged] = useState(true)
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [metrics, setMetrics] = useState<DiffMetrics>({
@@ -87,7 +100,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
     total: 0,
   })
   const [apiChanges, setApiChanges] = useState<ApiChanges | null>(null)
-  const [aiSummary, setAiSummary] = useState<String>("")
+  const [aiSummary, setAiSummary] = useState<AIResp>({} as AIResp)
   const [activeTab, setActiveTab] = useState("diff")
   const [isLargeDiff, setIsLargeDiff] = useState(false)
   const [showLargeDiff, setShowLargeDiff] = useState(false)
@@ -95,7 +108,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   useEffect(() => {
     let result
     setIsLoading(true)
-    axios.post("api/diff", {
+    setIsLoadingAI(true)
+    axios.post("/api/diff", {
       previous: file1.content,
       current: file2.content
     }).then((response) => {
@@ -117,7 +131,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       const calculatedMetrics = calculateMetrics(result.display)
       setApiChanges(result.changes)
       setMetrics(calculatedMetrics)
-      setAiSummary(result.ai_summary)
 
       const isLarge =
         calculatedMetrics.changed + calculatedMetrics.added + calculatedMetrics.removed > 100 ||
@@ -132,6 +145,12 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       setExpandedNodes(nodesToExpand)
       setDiffTree(result.display)
       setIsLoading(false)
+
+      axios.post("/api/overview", result).then((responseAI) => {
+        const aiResult = responseAI.data as AIResp
+        setAiSummary(aiResult)
+        setIsLoadingAI(false)
+      })
     })
 
   }, [file1, file2])
@@ -761,12 +780,12 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
         {activeTab === "ai" && (
           <div className="flex-1 overflow-auto">
-            {isLoading ? (
+            {isLoadingAI ? (
               <div className="flex flex-col items-center justify-center h-full p-4">
                 <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
                 <p className="text-sm text-gray-500">Getting AI summary...</p>
               </div>
-            ) : (<p>{aiSummary}</p>)}
+            ) : (<p>{aiSummary.candidates[0].content.parts[0].text}</p>)}
           </div>
         )}
         </div>
