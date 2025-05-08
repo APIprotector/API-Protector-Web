@@ -43,7 +43,7 @@ public class OverviewService {
             return Mono.error(new IllegalArgumentException("Input JSON data cannot be empty."));
         }
 
-        return sendPrompt(this.prompt + "\n\nHre is the JSON data to analyze:\n```json\n" + jsonContents + "\n```\n");
+        return sendPrompt(this.prompt + "\n\nHere is the JSON data to analyze:\n```json\n" + jsonContents + "\n```\n");
     }
 
     public Mono<String> sendPrompt(String prompt) {
