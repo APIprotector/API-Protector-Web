@@ -9,6 +9,7 @@ import axios from "axios";
 import {Switch} from "~/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Badge } from "~/components/ui/badge"
+import Markdown from 'react-markdown'
 
 interface FileData {
   name: string
@@ -785,9 +786,79 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                 <Shell className="h-8 w-8 text-primary animate-spin [animation-direction:reverse] mb-2" />
                 <p className="text-sm text-gray-500">Getting AI summary...</p>
               </div>
-            ) : (<p>{aiSummary.candidates[0].content.parts[0].text}</p>)}
-          </div>
-        )}
+            ) : (
+              <div className="p-6 max-w-4xl mx-auto prose prose-sm">
+                {aiSummary.candidates[0].content.parts[0].text.split("\n").map((line, index) => {
+                  if (line.startsWith("# ")) {
+                    return (
+                      <h1 key={index} className="text-2xl font-bold mt-2 mb-4">
+                        {line.substring(2)}
+                      </h1>
+                    )
+                  } else if (line.startsWith("## ")) {
+                    return (
+                      <h2 key={index} className="text-xl font-bold mt-6 mb-3">
+                        {line.substring(3)}
+                      </h2>
+                    )
+                  } else if (line.startsWith("### ")) {
+                    return (
+                      <h3 key={index} className="text-lg font-bold mt-4 mb-2">
+                        {line.substring(4)}
+                      </h3>
+                    )
+                  } else if (line.startsWith("- ")) {
+                    return (
+                      <li key={index} className="ml-4 my-1">
+                        {line.substring(2)}
+                      </li>
+                    )
+                  } else if (line.startsWith("```")) {
+                    return (
+                      <pre key={index} className="bg-gray-100 p-2 rounded my-2 font-mono text-sm">
+                        {line}
+                      </pre>
+                    )
+                  } else if (line.includes("**")) {
+                    return (
+                      <p key={index} className="my-1">
+                        {line.split(/(\*\*.*?\*\*)/).map((part, i) => {
+                          if (part.startsWith("**") && part.endsWith("**")) {
+                            return <strong key={i}>{part.substring(2, part.length - 2)}</strong>
+                          }
+                          return part
+                        })}
+                      </p>
+                    )
+                  } else if (line.includes("`")) {
+                    return (
+                      <p key={index} className="my-1">
+                        {line.split(/(`.*?`)/).map((part, i) => {
+                          if (part.startsWith("`") && part.endsWith("`")) {
+                            return (
+                              <code key={i} className="bg-gray-100 px-1 rounded">
+                                {part.substring(1, part.length - 1)}
+                              </code>
+                            )
+                          }
+                          return part
+                        })}
+                      </p>
+                    )
+                  } else if (line.trim() === "") {
+                    return <br key={index} />
+                  } else {
+                    return (
+                      <p key={index} className="my-1">
+                        {line}
+                      </p>
+                    )
+                  }
+                })}
+              </div>
+            )}
+            </div>
+          )}
         </div>
         <div className="p-4 border-t flex justify-between items-center">
           {activeTab === "diff" && (
