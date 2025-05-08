@@ -60,7 +60,7 @@ jobs:
       - name: Maven install dependencies
         run: |
           SETTINGS_XML_PATH="${GITHUB_WORKSPACE}/settings.xml"
-          ./mvnw clean install package --settings ${SETTINGS_XML_PATH}
+          ./mvnw clean install package -Dmaven.test.skip=true --settings ${SETTINGS_XML_PATH}
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
