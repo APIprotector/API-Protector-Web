@@ -343,7 +343,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
         <div className="flex items-start">
           {/* Left side (old) */}
           <div
-            className={`flex-1 flex items-start rounded-sm ${
+            className={`break-all flex-1 flex items-start rounded-sm ${
               node.type === "removed" ? "bg-red-50" : node.type === "changed" ? "bg-amber-50" : ""
             }`}
             style={{ visibility: showLeft ? "visible" : "hidden" }}
@@ -394,7 +394,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
           {/* Right side (new) */}
           <div
-            className={`flex-1 flex items-start rounded-sm ${
+            className={`break-all flex-1 flex items-start rounded-sm ${
               node.type === "added" ? "bg-green-50" : node.type === "changed" ? "bg-amber-50" : ""
             }`}
             style={{ visibility: showRight ? "visible" : "hidden" }}
