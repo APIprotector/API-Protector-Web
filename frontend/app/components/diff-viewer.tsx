@@ -4,12 +4,11 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { Button } from "~/components/ui/button"
-import {X, ChevronDown, ChevronRight, Shell, CheckCircle2} from "lucide-react"
+import {X, ChevronDown, ChevronRight, Shell, CheckCircle2, ArrowLeftRight} from "lucide-react"
 import axios from "axios";
 import {Switch} from "~/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Badge } from "~/components/ui/badge"
-import Markdown from 'react-markdown'
 
 interface FileData {
   name: string
@@ -105,6 +104,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [activeTab, setActiveTab] = useState("diff")
   const [isLargeDiff, setIsLargeDiff] = useState(false)
   const [showLargeDiff, setShowLargeDiff] = useState(false)
+  const [isSideBySide, setIsSideBySide] = useState(false)
 
   useEffect(() => {
     let result
@@ -298,6 +298,187 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                 {node.type === "added" && "+ "}
                 {node.type === "removed" && "- "}
                 {isArray? ("]"): ("}")}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderSideBySideDiffTree = (node: DiffNode, level = 0) => {
+    const indent = level * 20
+    const isExpanded = expandedNodes.has(node.path)
+    const hasChildren = node.children && node.children.length > 0
+
+    // Determine if this is a primitive value or an object/array
+    const isPrimitive =
+      (typeof node.value1 !== "object" || node.value1 === null || Array.isArray(node.value1)) &&
+      (typeof node.value2 !== "object" || node.value2 === null || Array.isArray(node.value2))
+
+    const isArray = Array.isArray(node.value1) || Array.isArray(node.value2)
+
+    // Determine if this node or any of its children have changes
+    const hasChanges =
+      node.type !== "unchanged" ||
+      (node.children &&
+        node.children.some(
+          (child) =>
+            child.type !== "unchanged" ||
+            (child.children && child.children.some((grandchild) => grandchild.type !== "unchanged")),
+        ))
+
+    // Skip rendering unchanged nodes based on settings
+    if ((showUnchanged || (level === 1 && !hasChanges)) && node.type === "unchanged") {
+      return null
+    }
+
+    // Determine what to show on each side
+    const showLeft = node.type !== "added"
+    const showRight = node.type !== "removed"
+
+    return (
+      <div key={node.path} className="relative">
+        {/* Render the node itself */}
+        <div className="flex items-start">
+          {/* Left side (old) */}
+          <div
+            className={`break-all flex-1 flex items-start rounded-sm ${
+              node.type === "removed" ? "bg-red-50" : node.type === "changed" ? "bg-amber-50" : ""
+            }`}
+            style={{ visibility: showLeft ? "visible" : "hidden" }}
+          >
+            <div style={{ paddingLeft: `${indent}px` }} className="flex items-start w-full">
+              {/* Expand/collapse button for objects/arrays */}
+              {hasChildren && (
+                <button onClick={(e) => toggleNode(node.path, e)} className="mr-1 p-1 hover:bg-gray-200 rounded">
+                  {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                </button>
+              )}
+
+              {/* Key name */}
+              <div
+                className={`font-mono py-1 pr-2 flex-shrink-0 ${
+                  node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-amber-800" : ""
+                }`}
+              >
+                {node.type === "removed" && "- "}
+                {node.key}
+                {hasChildren && !isPrimitive && ": {"}
+                {!hasChildren && !isPrimitive && node.type === "unchanged" && ": {}"}
+              </div>
+
+              {/* Value for primitive types */}
+              {isPrimitive && (
+                <div className="flex flex-col w-full">
+                  {(node.type === "removed" || node.type === "changed" || node.type === "unchanged") && !isArray && (
+                    <div
+                      className={`${
+                        node.type === "removed"
+                          ? "text-red-800"
+                          : node.type === "changed"
+                            ? "text-red-800 bg-red-50"
+                            : ""
+                      } py-1 px-2 rounded font-mono`}
+                    >
+                      {formatValue(node.value1)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="w-4"></div>
+
+          {/* Right side (new) */}
+          <div
+            className={`break-all flex-1 flex items-start rounded-sm ${
+              node.type === "added" ? "bg-green-50" : node.type === "changed" ? "bg-amber-50" : ""
+            }`}
+            style={{ visibility: showRight ? "visible" : "hidden" }}
+          >
+            <div style={{ paddingLeft: `${indent}px` }} className="flex items-start w-full">
+              {/* Expand/collapse button for objects/arrays */}
+              {hasChildren && (
+                <button onClick={(e) => toggleNode(node.path, e)} className="mr-1 p-1 hover:bg-gray-200 rounded">
+                  {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                </button>
+              )}
+
+              {/* Key name */}
+              <div
+                className={`font-mono py-1 pr-2 flex-shrink-0 ${
+                  node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-amber-800" : ""
+                }`}
+              >
+                {node.type === "added" && "+ "}
+                {node.key}
+                {hasChildren && !isPrimitive && ": {"}
+                {!hasChildren && !isPrimitive && node.type === "unchanged" && ": {}"}
+              </div>
+
+              {/* Value for primitive types */}
+              {isPrimitive && (
+                <div className="flex flex-col w-full">
+                  {(node.type === "added" || node.type === "changed" || node.type === "unchanged") && !isArray && (
+                    <div
+                      className={`${
+                        node.type === "added"
+                          ? "text-green-800"
+                          : node.type === "changed"
+                            ? "text-green-800 bg-green-50"
+                            : ""
+                      } py-1 px-2 rounded font-mono`}
+                    >
+                      {formatValue(node.type === "added" || node.type === "unchanged" ? node.value2 : node.value2)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Render children if expanded */}
+        {hasChildren && isExpanded && (
+          <div>
+            {node.children!.map((child, index) =>
+              renderSideBySideDiffTree(child, level + 1),
+            )}
+            {!isPrimitive && (
+              <div className="flex">
+                {/* Left side closing brace */}
+                  <div className="flex-1">
+                    {showLeft && (
+                    <div
+                      className={`font-mono py-1 ${
+                        node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-amber-800" : ""
+                      }`}
+                      style={{ paddingLeft: `${indent}px` }}
+                    >
+                      {node.type === "removed" && "- "}
+                      {"}"}
+                    </div>
+                    )}
+                  </div>
+                {/* Divider */}
+                <div className="w-4"></div>
+                {/* Right side closing brace */}
+                  <div className="flex-1">
+                    {showRight && (
+                    <div
+                      className={`font-mono py-1 ${
+                        node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-amber-800" : ""
+                      }`}
+                      style={{ paddingLeft: `${indent}px` }}
+                    >
+                      {node.type === "added" && "+ "}
+                      {"}"}
+                    </div>
+                    )}
+                  </div>
               </div>
             )}
           </div>
@@ -742,9 +923,25 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                 </div>
               ) : !!diffTree ? (
                 <div className="text-sm">
-                  {diffTree.children?.map((child, _) =>
-                    renderDiffTree(child, 1),
-                  )}
+                  <div className="text-sm">
+                    {/* Render header for side-by-side view */}
+                    {isSideBySide && (
+                      <div className="flex mb-2 font-medium text-sm">
+                        <div className="flex-1 px-2 py-1 bg-gray-100 rounded-t">Old Version</div>
+                        <div className="w-4"></div>
+                        <div className="flex-1 px-2 py-1 bg-gray-100 rounded-t">New Version</div>
+                      </div>
+                    )}
+
+                    {/* Render the appropriate diff view based on the toggle */}
+                    {isSideBySide
+                      ? diffTree.children?.map((child, index) =>
+                        renderSideBySideDiffTree(child, 1),
+                      )
+                      : diffTree.children?.map((child, index) =>
+                        renderDiffTree(child, 1),
+                      )}
+                  </div>
                 </div>
               ) : (
                   <div className="flex items-center justify-center h-full">
@@ -861,19 +1058,34 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           )}
         </div>
         <div className="p-4 border-t flex justify-between items-center">
-          {activeTab === "diff" && (
+
           <div className="flex items-center space-x-2">
-            <Switch
-              checked={showUnchanged}
-              onCheckedChange={(e) => setShowUnchanged(e)}
-              id="hide-unchanged"
-            />
-            <label htmlFor="hide-unchanged" className="text-sm font-medium cursor-pointer">
-              Hide unchanged nodes
-            </label>
-          </div>)}
-          {(activeTab === "metrics" || activeTab === "api" || activeTab === "ai") && <div></div>}
-          <Button onClick={onClose}>Close</Button>
+            {activeTab === "diff" && (
+              <>
+                <Switch
+                  checked={showUnchanged}
+                  onCheckedChange={(e) => setShowUnchanged(e)}
+                  id="hide-unchanged"
+                />
+                <label htmlFor="hide-unchanged" className="text-sm font-medium cursor-pointer">
+                  Hide unchanged nodes
+                </label>
+              </>
+            )}
+          </div>
+
+          {/* View toggle button */}
+          <div className="flex justify-end mb-4 gap-2">
+            {(activeTab === "diff") && <Button
+                onClick={() => setIsSideBySide(!isSideBySide)}
+            >
+                <ArrowLeftRight className="h-4 w-4" />
+              {isSideBySide ? "Unified View" : "Side-by-Side View"}
+            </Button>
+            }
+
+            <Button onClick={onClose}>Close</Button>
+          </div>
         </div>
       </div>
     </div>
