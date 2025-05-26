@@ -19,6 +19,7 @@ import {parseFileContent} from "~/lib/file-parser";
 import {bundleAndLoadRuleset} from "@stoplight/spectral-ruleset-bundler/with-loader";
 import * as fs from "node:fs";
 import { parse } from '@stoplight/yaml'
+import {Alert, AlertDescription} from "~/components/ui/alert";
 
 interface LintResult {
   code: string
@@ -570,17 +571,11 @@ export default function OpenApiLinter() {
 
   return (
     <div className="space-y-6">
-      {error && error !== "Please provide an OpenAPI specification to validate" && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-start">
-          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium">Error</p>
-            <p>{error}</p>
-          </div>
-          <button className="ml-auto" onClick={() => setError(null)}>
-            <X className="h-5 w-5 text-red-600" />
-          </button>
-        </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       <div className="flex justify-between items-center">
