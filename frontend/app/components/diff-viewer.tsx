@@ -779,6 +779,36 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             </CardContent>
           </Card>
         </div>
+
+        <div className="bg-gray-100 rounded-lg p-4">
+          <h4 className="text-sm font-medium mb-2">Change Distribution</h4>
+          <div className="h-6 w-full bg-gray-200 rounded-full overflow-hidden">
+            {total > 0 && (
+              <>
+                <div
+                  className="h-full bg-green-500 float-left"
+                  style={{ width: `${(added / total) * 100}%` }}
+                  title={`Added: ${added} (${Math.round((added / total) * 100)}%)`}
+                ></div>
+                <div
+                  className="h-full bg-red-500 float-left"
+                  style={{ width: `${(removed / total) * 100}%` }}
+                  title={`Removed: ${removed} (${Math.round((removed / total) * 100)}%)`}
+                ></div>
+                <div
+                  className="h-full bg-amber-500 float-left"
+                  style={{ width: `${(changed / total) * 100}%` }}
+                  title={`Modified: ${changed} (${Math.round((changed / total) * 100)}%)`}
+                ></div>
+              </>
+            )}
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <span>0%</span>
+            <span>50%</span>
+            <span>100%</span>
+          </div>
+        </div>
       </div>
     )
   }
