@@ -12,7 +12,7 @@ export default function Navbar() {
           </NavLink>
           <nav className="hidden md:flex items-center space-x-6">
             <NavLink to="/" className="text-sm text-gray-600 hover:text-primary">
-              Home
+              Compare
             </NavLink>
             <NavLink to="/validate" className="text-sm text-gray-600 hover:text-primary">
               Validate

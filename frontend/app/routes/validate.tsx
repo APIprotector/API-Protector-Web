@@ -11,8 +11,8 @@ export function meta({}: Route.MetaArgs) {
 export default function LintPage() {
   return (
     <>
-      <h1 className="text-3xl font-bold mb-6">OpenAPI Linter</h1>
-      <p className="text-gray-600 mb-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">OpenAPI Linter</h1>
+      <p className="text-gray-600 mb-8 text-center">
         Validate your OpenAPI specifications against Spectral rules to ensure they follow best practices and
         standards.
       </p>

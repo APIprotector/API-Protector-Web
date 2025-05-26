@@ -864,6 +864,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               variant={activeTab === "diff" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("diff")}
+              className="cursor-pointer"
             >
               Diff View
             </Button>
@@ -871,20 +872,22 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               variant={activeTab === "metrics" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("metrics")}
+              className="cursor-pointer"
             >
               Metrics
             </Button>
-            <Button variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
+            <Button className="cursor-pointer" variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
               API Changes
             </Button>
             <Button
               variant={activeTab === "ai" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("ai")}
+              className="cursor-pointer"
             >
               AI Summary
             </Button>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} className="cursor-pointer">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -1096,6 +1099,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                   checked={showUnchanged}
                   onCheckedChange={(e) => setShowUnchanged(e)}
                   id="hide-unchanged"
+                  className="cursor-pointer"
                 />
                 <label htmlFor="hide-unchanged" className="text-sm font-medium cursor-pointer">
                   Hide unchanged nodes
@@ -1106,7 +1110,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
           {/* View toggle button */}
           <div className="flex justify-end mb-4 gap-2">
-            {(activeTab === "diff") && <Button
+            {(activeTab === "diff") && <Button className="cursor-pointer"
                 onClick={() => setIsSideBySide(!isSideBySide)}
             >
                 <ArrowLeftRight className="h-4 w-4" />
@@ -1114,7 +1118,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             </Button>
             }
 
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose} className="cursor-pointer">Close</Button>
           </div>
         </div>
       </div>

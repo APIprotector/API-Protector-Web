@@ -233,8 +233,8 @@ export default function OpenApiLinter() {
         <CardContent className="pt-6">
           <Tabs defaultValue="upload" value={activeTab} onValueChange={(value) => {setActiveTab(value as any);}}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="upload">Upload File</TabsTrigger>
-              <TabsTrigger value="url">URL</TabsTrigger>
+              <TabsTrigger value="upload" className="cursor-pointer">Upload File</TabsTrigger>
+              <TabsTrigger value="url" className="cursor-pointer">URL</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upload">
@@ -408,7 +408,7 @@ export default function OpenApiLinter() {
   const renderSettingsDialog = () => {
     return (
       <>
-        <Button variant="outline" className="gap-2" onClick={() => setIsSettingsOpen(true)}>
+        <Button variant="outline" className="gap-2 cursor-pointer" onClick={() => setIsSettingsOpen(true)}>
           <Settings className="h-4 w-4" />
           Ruleset Settings
         </Button>
@@ -418,7 +418,7 @@ export default function OpenApiLinter() {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-lg font-semibold">Ruleset Settings</h2>
-                <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(false)}>
+                <Button className="cursor-pointer" variant="ghost" size="sm" onClick={() => setIsSettingsOpen(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -430,7 +430,7 @@ export default function OpenApiLinter() {
 
                 <RadioGroup value={ruleset} onValueChange={(value) => setRuleset(value as any)} className="space-y-4">
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="spectral:oas" id="spectral-oas" />
+                    <RadioGroupItem value="spectral:oas" id="spectral-oas" className="cursor-pointer" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-oas" className="font-medium">
                         Spectral:OAS (Default)
@@ -441,7 +441,7 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="spectral:arazzo" id="spectral-arazzo" />
+                    <RadioGroupItem value="spectral:arazzo" id="spectral-arazzo" className="cursor-pointer" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-arazzo" className="font-medium">
                         Spectral:Arazzo
@@ -450,7 +450,7 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="spectral:asyncapi" id="spectral-asyncapi" />
+                    <RadioGroupItem value="spectral:asyncapi" id="spectral-asyncapi" className="cursor-pointer" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-asyncapi" className="font-medium">
                         Spectral:AsyncAPI
@@ -459,7 +459,7 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="custom" id="custom-ruleset" />
+                    <RadioGroupItem value="custom" id="custom-ruleset" className="cursor-pointer" />
                     <div className="grid gap-1.5 w-full">
                       <Label htmlFor="custom-ruleset" className="font-medium">
                         Custom Ruleset
@@ -497,7 +497,7 @@ export default function OpenApiLinter() {
               </div>
 
               <div className="flex justify-end p-4 border-t">
-                <Button onClick={() => setIsSettingsOpen(false)}>Save Settings</Button>
+                <Button onClick={() => setIsSettingsOpen(false)} className="cursor-pointer">Save Settings</Button>
               </div>
             </div>
           </div>
@@ -539,7 +539,7 @@ export default function OpenApiLinter() {
             </span>
           </div>
         </div>
-        <Button onClick={handleValidate} disabled={isLoading}>
+        <Button onClick={handleValidate} disabled={isLoading} className="cursor-pointer">
           {isLoading ? "Validating..." : "Validate"}
         </Button>
       </div>

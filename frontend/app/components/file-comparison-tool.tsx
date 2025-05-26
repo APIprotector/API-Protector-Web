@@ -198,8 +198,8 @@ export default function FileComparisonTool() {
                 className="w-full"
             >
               <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="upload">Upload File</TabsTrigger>
-                <TabsTrigger value="url">URL</TabsTrigger>
+                <TabsTrigger value="upload" className="cursor-pointer">Upload File</TabsTrigger>
+                <TabsTrigger value="url" className="cursor-pointer">URL</TabsTrigger>
               </TabsList>
 
               <TabsContent value="upload">
@@ -282,15 +282,16 @@ export default function FileComparisonTool() {
               checked={resolveRefs}
               onCheckedChange={(e) => setResolveRefs(e)}
               id="resolve-refs"
+              className="cursor-pointer"
             />
-            <label htmlFor="resolve-refs" className="text-sm font-medium text-gray-700">
+            <label htmlFor="resolve-refs" className="text-sm font-medium text-gray-700 cursor-pointer">
               Resolve references
             </label>
           </div>
         </div>
 
         <div className="flex justify-center mt-4">
-          <Button size="lg" onClick={handleCompare} disabled={isCompareDisabled()}>
+          <Button size="lg" onClick={handleCompare} disabled={isCompareDisabled()} className="cursor-pointer">
             {isLoading ? "Fetching Files..." : "Compare Files"}
           </Button>
         </div>
