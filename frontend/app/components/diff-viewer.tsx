@@ -344,7 +344,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           {/* Left side (old) */}
           <div
             className={`break-all flex-1 flex items-start rounded-sm ${
-              node.type === "removed" ? "bg-red-50" : node.type === "changed" ? "bg-amber-50" : ""
+              node.type === "removed" ? "bg-red-50" : node.type === "changed" ? "bg-yellow-50" : ""
             }`}
             style={{ visibility: showLeft ? "visible" : "hidden" }}
           >
@@ -359,7 +359,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               {/* Key name */}
               <div
                 className={`font-mono py-1 pr-2 flex-shrink-0 ${
-                  node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-amber-800" : ""
+                  node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-yellow-800" : ""
                 }`}
               >
                 {node.type === "removed" && "- "}
@@ -395,7 +395,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           {/* Right side (new) */}
           <div
             className={`break-all flex-1 flex items-start rounded-sm ${
-              node.type === "added" ? "bg-green-50" : node.type === "changed" ? "bg-amber-50" : ""
+              node.type === "added" ? "bg-green-50" : node.type === "changed" ? "bg-yellow-50" : ""
             }`}
             style={{ visibility: showRight ? "visible" : "hidden" }}
           >
@@ -410,7 +410,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               {/* Key name */}
               <div
                 className={`font-mono py-1 pr-2 flex-shrink-0 ${
-                  node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-amber-800" : ""
+                  node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-yellow-800" : ""
                 }`}
               >
                 {node.type === "added" && "+ "}
@@ -454,7 +454,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                     {showLeft && (
                     <div
                       className={`font-mono py-1 ${
-                        node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-amber-800" : ""
+                        node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-yellow-800" : ""
                       }`}
                       style={{ paddingLeft: `${indent}px` }}
                     >
@@ -470,7 +470,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                     {showRight && (
                     <div
                       className={`font-mono py-1 ${
-                        node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-amber-800" : ""
+                        node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-yellow-800" : ""
                       }`}
                       style={{ paddingLeft: `${indent}px` }}
                     >
@@ -566,16 +566,16 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center">
-                <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+                <span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
                 Deprecated Endpoints ({deprecatedEndpoints.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {deprecatedEndpoints.map((endpoint, index) => (
-                  <div key={`deprecated-${index}`} className="p-3 bg-amber-50 rounded-md">
+                  <div key={`deprecated-${index}`} className="p-3 bg-yellow-50 rounded-md">
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-amber-600">{endpoint.method}</Badge>
+                      <Badge className="bg-yellow-600">{endpoint.method}</Badge>
                       <code className="text-sm font-mono">{endpoint.path}</code>
                     </div>
                     {endpoint.summary && <p className="text-sm mt-1 text-gray-600">{endpoint.summary}</p>}
@@ -770,7 +770,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+                    <span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
                     Modified:
                   </span>
                   <span className="font-medium">{changed}</span>
@@ -796,7 +796,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                   title={`Removed: ${removed} (${Math.round((removed / total) * 100)}%)`}
                 ></div>
                 <div
-                  className="h-full bg-amber-500 float-left"
+                  className="h-full bg-yellow-500 float-left"
                   style={{ width: `${(changed / total) * 100}%` }}
                   title={`Modified: ${changed} (${Math.round((changed / total) * 100)}%)`}
                 ></div>

@@ -173,7 +173,7 @@ export default function OpenApiLinter() {
       case "error":
         return <AlertCircle className="h-4 w-4 text-red-500" />
       case "warning":
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
       case "info":
         return <Info className="h-4 w-4 text-blue-500" />
       case "hint":
@@ -188,7 +188,7 @@ export default function OpenApiLinter() {
       case "error":
         return "bg-red-100 text-red-800 border-red-200"
       case "warning":
-        return "bg-amber-100 text-amber-800 border-amber-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "info":
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "hint":
@@ -203,7 +203,7 @@ export default function OpenApiLinter() {
       case "error":
         return "bg-red-500"
       case "warning":
-        return "bg-amber-500"
+        return "bg-yellow-500"
       case "info":
         return "bg-blue-500"
       case "hint":
@@ -340,7 +340,7 @@ export default function OpenApiLinter() {
               </Badge>
             )}
             {warningCount > 0 && (
-              <Badge className="bg-amber-500">
+              <Badge className="bg-yellow-500">
                 {warningCount} Warning{warningCount !== 1 && "s"}
               </Badge>
             )}
