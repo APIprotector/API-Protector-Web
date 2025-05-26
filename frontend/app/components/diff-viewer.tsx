@@ -857,14 +857,14 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b gap-4 sm:gap-2">
           <h2 className="text-xl font-bold">File Comparison Results</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
             <Button
               variant={activeTab === "diff" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("diff")}
-              className="cursor-pointer"
+              className="text-xs sm:text-sm cursor-pointer"
             >
               Diff View
             </Button>
@@ -872,18 +872,18 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               variant={activeTab === "metrics" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("metrics")}
-              className="cursor-pointer"
+              className="text-xs sm:text-sm cursor-pointer"
             >
               Metrics
             </Button>
-            <Button className="cursor-pointer" variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
+            <Button className="text-xs sm:text-sm cursor-pointer" variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
               API Changes
             </Button>
             <Button
               variant={activeTab === "ai" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("ai")}
-              className="cursor-pointer"
+              className="text-xs sm:text-sm cursor-pointer"
             >
               AI Summary
             </Button>
@@ -1109,8 +1109,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           </div>
 
           {/* View toggle button */}
-          <div className="flex justify-end mb-4 gap-2">
-            {(activeTab === "diff") && <Button className="cursor-pointer"
+          <div className="flex justify-end mb-4 gap-2 ">
+            {(activeTab === "diff") && <Button className="cursor-pointer sm:inline hidden"
                 onClick={() => setIsSideBySide(!isSideBySide)}
             >
                 <ArrowLeftRight className="h-4 w-4" />
