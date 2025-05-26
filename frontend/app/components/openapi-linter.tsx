@@ -11,7 +11,6 @@ import { Badge } from "~/components/ui/badge"
 import { Settings, FileJson, FileUp, LinkIcon, AlertCircle, CheckCircle, Info, AlertTriangle, X } from "lucide-react"
 import { Label } from "~/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
-import { Textarea } from "~/components/ui/textarea"
 import { readFileContent } from "~/lib/utils";
 import {type ISpectralDiagnostic, Ruleset, Spectral} from "@stoplight/spectral-core";
 import { oas, asyncapi, arazzo } from "@stoplight/spectral-rulesets";
@@ -271,6 +270,10 @@ export default function OpenApiLinter() {
                   placeholder="https://example.com/openapi.json"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter")
+                      handleValidate();
+                  }}
                   className="w-full"
                 />
 
@@ -388,7 +391,7 @@ export default function OpenApiLinter() {
                               Line {result.line}:{result.column}
                             </span>
                             <span className="mx-2">|</span>
-                            <span className="font-mono">{result.path}</span>
+                            <span className="font-mono break-all">{result.path}</span>
                           </div>
                         </div>
                       </div>
