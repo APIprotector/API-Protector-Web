@@ -32,6 +32,8 @@ export default function FileComparisonTool() {
   const [isLoading, setIsLoading] = useState(false)
   const [showDiff, setShowDiff] = useState(false)
   const [resolveRefs, setResolveRefs] = useState(false)
+  const [isDragging1, setIsDragging1] = useState(false)
+  const [isDragging2, setIsDragging2] = useState(false)
 
   // Effect to reprocess files when resolveRefs changes
   useEffect(() => {
@@ -203,10 +205,24 @@ export default function FileComparisonTool() {
               </TabsList>
 
               <TabsContent value="upload">
-                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div
+                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-colors ${
+                    (fileNumber === 1 ? isDragging1 : isDragging2)
+                      ? "border-primary bg-primary/10"
+                      : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, fileNumber)}
+                  onDragLeave={(e) => handleDragLeave(e, fileNumber)}
+                  onDrop={(e) => handleDrop(e, fileNumber)}
+                >
                   <FileJson className="h-10 w-10 text-gray-400 mb-2" />
                   <p className="text-sm font-medium mb-2">
                     {file && file.source === "upload" ? file.name : `Upload file ${fileNumber} (JSON/YAML)`}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-2 text-center">
+                    {(fileNumber === 1 ? isDragging1 : isDragging2)
+                      ? "Drop file here"
+                      : "Drag and drop a file here, or click to select"}
                   </p>
                   <div className="relative">
                     <Button variant="outline" size="sm" className="mt-2">
@@ -259,6 +275,72 @@ export default function FileComparisonTool() {
     if (activeTab2 === "url" && !url2) return true
 
     return false
+  }
+
+
+  const handleDragOver = (e: React.DragEvent, fileNumber: 1 | 2) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (fileNumber === 1) {
+      setIsDragging1(true)
+    } else {
+      setIsDragging2(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent, fileNumber: 1 | 2) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only set dragging to false if we're leaving the drop zone entirely
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      if (fileNumber === 1) {
+        setIsDragging1(false)
+      } else {
+        setIsDragging2(false)
+      }
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent, fileNumber: 1 | 2) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (fileNumber === 1) {
+      setIsDragging1(false)
+    } else {
+      setIsDragging2(false)
+    }
+
+    setError(null)
+
+    const files = e.dataTransfer.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+
+    // Check if file is JSON or YAML
+    const fileExtension = file.name.split(".").pop()?.toLowerCase()
+    if (!["json", "yaml", "yml"].includes(fileExtension || "")) {
+      setError("Only JSON and YAML files are supported")
+      return
+    }
+
+    try {
+      const content = await readFileContent(file)
+      const parsedContent = parseFileContent(content, fileExtension as string)
+
+      if (fileNumber === 1) {
+        setFile1({ name: file.name, content: parsedContent, source: "upload" })
+      } else {
+        setFile2({ name: file.name, content: parsedContent, source: "upload" })
+      }
+    } catch (err) {
+      setError(`Error parsing file: ${(err as Error).message}`)
+    }
   }
 
   return (

@@ -48,6 +48,58 @@ export default function OpenApiLinter() {
   const [customRulesetUrl, setCustomRulesetUrl] = useState("")
   const [customRuleset, setCustomRuleset] = useState("")
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only set dragging to false if we're leaving the drop zone entirely
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    setError(null)
+
+    const files = e.dataTransfer.files
+    if (!files || files.length === 0) return
+
+    const droppedFile = files[0]
+
+    // Check if file is JSON or YAML
+    const fileExtension = droppedFile.name.split(".").pop()?.toLowerCase()
+    if (!["json", "yaml", "yml"].includes(fileExtension || "")) {
+      setError("Only JSON and YAML files are supported")
+      return
+    }
+
+    try {
+      const content = await readFileContent(droppedFile)
+      setFile({
+        name: droppedFile.name,
+        content,
+        source: "upload",
+        format: fileExtension as "json" | "yaml" | "yml",
+      })
+    } catch (err) {
+      setError(`Error reading file: ${(err as Error).message}`)
+    }
+  }
 
   const fetchFileFromUrl = async (url: string, parse: boolean = false): Promise<string> => {
     if (!url) {
@@ -238,10 +290,20 @@ export default function OpenApiLinter() {
             </TabsList>
 
             <TabsContent value="upload">
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
+              <div
+                className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-colors ${
+                  isDragging ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <FileJson className="h-10 w-10 text-gray-400 mb-2" />
                 <p className="text-sm font-medium mb-2">
                   {file && file.source === "upload" ? file.name : "Upload OpenAPI spec (JSON/YAML)"}
+                </p>
+                <p className="text-xs text-gray-500 mb-2 text-center">
+                  {isDragging ? "Drop file here" : "Drag and drop a file here, or click to select"}
                 </p>
                 <div className="relative">
                   <Button variant="outline" size="sm" className="mt-2">
