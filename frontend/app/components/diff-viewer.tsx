@@ -105,6 +105,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [isLargeDiff, setIsLargeDiff] = useState(false)
   const [showLargeDiff, setShowLargeDiff] = useState(false)
   const [isSideBySide, setIsSideBySide] = useState(false)
+  const [aiSummaryRequested, setAiSummaryRequested] = useState(false)
 
   function stripValuesIfChildren(node:DiffNode) {
     if (node.children && node.children.length > 0) {
@@ -158,31 +159,6 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       setExpandedNodes(nodesToExpand)
       setDiffTree(result.display)
       setIsLoading(false)
-
-      let aiRequest = structuredClone(result)
-      stripValuesIfChildren(aiRequest.display)
-
-      axios.post("/api/overview", aiRequest).then((responseAI) => {
-        const aiResult = responseAI.data as AIResp
-        setAiSummary(aiResult)
-        setIsLoadingAI(false)
-      }).catch((err) => {
-        setIsLoadingAI(false)
-        console.error("Error fetching AI summary:", err)
-        setAiSummary({
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    text: "AI summary not available. Please try again later."
-                  }
-                ]
-              }
-            }
-          ]
-        })
-      })
     }).catch((err) => {
       setIsLoadingAI(false)
       setIsLoading(false)
@@ -206,6 +182,42 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
   }, [file1, file2])
 
+  const generateAiSummary = () => {
+    if (isLoading || aiSummaryRequested || !diffTree) return
+
+    setIsLoadingAI(true)
+    setAiSummaryRequested(true)
+
+    let aiRequest = {
+      display: structuredClone(diffTree),
+      changes: structuredClone(apiChanges)
+    } as Resp
+
+    stripValuesIfChildren(aiRequest.display)
+
+    axios.post("/api/overview", aiRequest).then((responseAI) => {
+      const aiResult = responseAI.data as AIResp
+      setAiSummary(aiResult)
+    }).catch((err) => {
+      console.error("Error fetching AI summary:", err)
+      setAiSummary({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: "AI summary not available. Please try again later."
+                }
+              ]
+            }
+          }
+        ]
+      })
+    }).finally(() => {
+      setIsLoadingAI(false)
+      setIsLoadingAI(false)
+    })
+  }
 
   const calculateMetrics = (node: DiffNode): DiffMetrics => {
     const metrics: DiffMetrics = {
@@ -932,7 +944,11 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             <Button
               variant={activeTab === "ai" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveTab("ai")}
+              onClick={() => {
+                setActiveTab("ai")
+                generateAiSummary()
+              }
+            }
               className="text-xs sm:text-sm cursor-pointer"
             >
               AI Summary
