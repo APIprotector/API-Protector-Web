@@ -106,6 +106,18 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [showLargeDiff, setShowLargeDiff] = useState(false)
   const [isSideBySide, setIsSideBySide] = useState(false)
 
+  function stripValuesIfChildren(node:DiffNode) {
+    if (node.children && node.children.length > 0) {
+      delete node.value1;
+      delete node.value2;
+      if (node.children) {
+        node.children.forEach(child => stripValuesIfChildren(child));
+      }
+    } else if (node.children) {
+      node.children.forEach(child => stripValuesIfChildren(child));
+    }
+  }
+
   useEffect(() => {
     let result
     setIsLoading(true)
@@ -147,10 +159,48 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       setDiffTree(result.display)
       setIsLoading(false)
 
-      axios.post("/api/overview", result).then((responseAI) => {
+      let aiRequest = structuredClone(result)
+      stripValuesIfChildren(aiRequest.display)
+
+      axios.post("/api/overview", aiRequest).then((responseAI) => {
         const aiResult = responseAI.data as AIResp
         setAiSummary(aiResult)
         setIsLoadingAI(false)
+      }).catch((err) => {
+        setIsLoadingAI(false)
+        console.error("Error fetching AI summary:", err)
+        setAiSummary({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: "AI summary not available. Please try again later."
+                  }
+                ]
+              }
+            }
+          ]
+        })
+      })
+    }).catch((err) => {
+      setIsLoadingAI(false)
+      setIsLoading(false)
+
+      console.error("Error fetching diff:", err)
+
+      setAiSummary({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: "AI summary not available. Please try again later."
+                }
+              ]
+            }
+          }
+        ]
       })
     })
 
@@ -1110,7 +1160,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
 
           {/* View toggle button */}
           <div className="flex justify-end mb-4 gap-2 ">
-            {(activeTab === "diff") && <Button className="cursor-pointer sm:inline hidden"
+            {(activeTab === "diff") && <Button className="cursor-pointer sm:flex hidden"
                 onClick={() => setIsSideBySide(!isSideBySide)}
             >
                 <ArrowLeftRight className="h-4 w-4" />
