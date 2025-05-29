@@ -11,7 +11,6 @@ import { Badge } from "~/components/ui/badge"
 import { Settings, FileJson, FileUp, LinkIcon, AlertCircle, CheckCircle, Info, AlertTriangle, X } from "lucide-react"
 import { Label } from "~/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
-import { Textarea } from "~/components/ui/textarea"
 import { readFileContent } from "~/lib/utils";
 import {type ISpectralDiagnostic, Ruleset, Spectral} from "@stoplight/spectral-core";
 import { oas, asyncapi, arazzo } from "@stoplight/spectral-rulesets";
@@ -20,6 +19,7 @@ import {parseFileContent} from "~/lib/file-parser";
 import {bundleAndLoadRuleset} from "@stoplight/spectral-ruleset-bundler/with-loader";
 import * as fs from "node:fs";
 import { parse } from '@stoplight/yaml'
+import {Alert, AlertDescription} from "~/components/ui/alert";
 
 interface LintResult {
   code: string
@@ -49,6 +49,58 @@ export default function OpenApiLinter() {
   const [customRulesetUrl, setCustomRulesetUrl] = useState("")
   const [customRuleset, setCustomRuleset] = useState("")
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only set dragging to false if we're leaving the drop zone entirely
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    setError(null)
+
+    const files = e.dataTransfer.files
+    if (!files || files.length === 0) return
+
+    const droppedFile = files[0]
+
+    // Check if file is JSON or YAML
+    const fileExtension = droppedFile.name.split(".").pop()?.toLowerCase()
+    if (!["json", "yaml", "yml"].includes(fileExtension || "")) {
+      setError("Only JSON and YAML files are supported")
+      return
+    }
+
+    try {
+      const content = await readFileContent(droppedFile)
+      setFile({
+        name: droppedFile.name,
+        content,
+        source: "upload",
+        format: fileExtension as "json" | "yaml" | "yml",
+      })
+    } catch (err) {
+      setError(`Error reading file: ${(err as Error).message}`)
+    }
+  }
 
   const fetchFileFromUrl = async (url: string, parse: boolean = false): Promise<string> => {
     if (!url) {
@@ -173,7 +225,7 @@ export default function OpenApiLinter() {
       case "error":
         return <AlertCircle className="h-4 w-4 text-red-500" />
       case "warning":
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
       case "info":
         return <Info className="h-4 w-4 text-blue-500" />
       case "hint":
@@ -188,7 +240,7 @@ export default function OpenApiLinter() {
       case "error":
         return "bg-red-100 text-red-800 border-red-200"
       case "warning":
-        return "bg-amber-100 text-amber-800 border-amber-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "info":
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "hint":
@@ -203,7 +255,7 @@ export default function OpenApiLinter() {
       case "error":
         return "bg-red-500"
       case "warning":
-        return "bg-amber-500"
+        return "bg-yellow-500"
       case "info":
         return "bg-blue-500"
       case "hint":
@@ -234,15 +286,25 @@ export default function OpenApiLinter() {
         <CardContent className="pt-6">
           <Tabs defaultValue="upload" value={activeTab} onValueChange={(value) => {setActiveTab(value as any);}}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="upload">Upload File</TabsTrigger>
-              <TabsTrigger value="url">URL</TabsTrigger>
+              <TabsTrigger value="upload" className="cursor-pointer">Upload File</TabsTrigger>
+              <TabsTrigger value="url" className="cursor-pointer">URL</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upload">
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
+              <div
+                className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-colors ${
+                  isDragging ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <FileJson className="h-10 w-10 text-gray-400 mb-2" />
                 <p className="text-sm font-medium mb-2">
                   {file && file.source === "upload" ? file.name : "Upload OpenAPI spec (JSON/YAML)"}
+                </p>
+                <p className="text-xs text-gray-500 mb-2 text-center">
+                  {isDragging ? "Drop file here" : "Drag and drop a file here, or click to select"}
                 </p>
                 <div className="relative">
                   <Button variant="outline" size="sm" className="mt-2">
@@ -271,6 +333,10 @@ export default function OpenApiLinter() {
                   placeholder="https://example.com/openapi.json"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter")
+                      handleValidate();
+                  }}
                   className="w-full"
                 />
 
@@ -340,7 +406,7 @@ export default function OpenApiLinter() {
               </Badge>
             )}
             {warningCount > 0 && (
-              <Badge className="bg-amber-500">
+              <Badge className="bg-yellow-500">
                 {warningCount} Warning{warningCount !== 1 && "s"}
               </Badge>
             )}
@@ -388,7 +454,7 @@ export default function OpenApiLinter() {
                               Line {result.line}:{result.column}
                             </span>
                             <span className="mx-2">|</span>
-                            <span className="font-mono">{result.path}</span>
+                            <span className="font-mono break-all">{result.path}</span>
                           </div>
                         </div>
                       </div>
@@ -405,7 +471,7 @@ export default function OpenApiLinter() {
   const renderSettingsDialog = () => {
     return (
       <>
-        <Button variant="outline" className="gap-2" onClick={() => setIsSettingsOpen(true)}>
+        <Button variant="outline" className="gap-2 cursor-pointer" onClick={() => setIsSettingsOpen(true)}>
           <Settings className="h-4 w-4" />
           Ruleset Settings
         </Button>
@@ -415,7 +481,7 @@ export default function OpenApiLinter() {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-lg font-semibold">Ruleset Settings</h2>
-                <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(false)}>
+                <Button className="cursor-pointer" variant="ghost" size="sm" onClick={() => setIsSettingsOpen(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -427,7 +493,7 @@ export default function OpenApiLinter() {
 
                 <RadioGroup value={ruleset} onValueChange={(value) => setRuleset(value as any)} className="space-y-4">
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="spectral:oas" id="spectral-oas" />
+                    <RadioGroupItem value="spectral:oas" id="spectral-oas" className="cursor-pointer" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-oas" className="font-medium">
                         Spectral:OAS (Default)
@@ -438,7 +504,7 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="spectral:arazzo" id="spectral-arazzo" />
+                    <RadioGroupItem value="spectral:arazzo" id="spectral-arazzo" className="cursor-pointer" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-arazzo" className="font-medium">
                         Spectral:Arazzo
@@ -447,7 +513,7 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="spectral:asyncapi" id="spectral-asyncapi" />
+                    <RadioGroupItem value="spectral:asyncapi" id="spectral-asyncapi" className="cursor-pointer" />
                     <div className="grid gap-1.5">
                       <Label htmlFor="spectral-asyncapi" className="font-medium">
                         Spectral:AsyncAPI
@@ -456,7 +522,7 @@ export default function OpenApiLinter() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-2">
-                    <RadioGroupItem value="custom" id="custom-ruleset" />
+                    <RadioGroupItem value="custom" id="custom-ruleset" className="cursor-pointer" />
                     <div className="grid gap-1.5 w-full">
                       <Label htmlFor="custom-ruleset" className="font-medium">
                         Custom Ruleset
@@ -494,7 +560,7 @@ export default function OpenApiLinter() {
               </div>
 
               <div className="flex justify-end p-4 border-t">
-                <Button onClick={() => setIsSettingsOpen(false)}>Save Settings</Button>
+                <Button onClick={() => setIsSettingsOpen(false)} className="cursor-pointer">Save Settings</Button>
               </div>
             </div>
           </div>
@@ -505,17 +571,11 @@ export default function OpenApiLinter() {
 
   return (
     <div className="space-y-6">
-      {error && error !== "Please provide an OpenAPI specification to validate" && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-start">
-          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium">Error</p>
-            <p>{error}</p>
-          </div>
-          <button className="ml-auto" onClick={() => setError(null)}>
-            <X className="h-5 w-5 text-red-600" />
-          </button>
-        </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       <div className="flex justify-between items-center">
@@ -536,7 +596,7 @@ export default function OpenApiLinter() {
             </span>
           </div>
         </div>
-        <Button onClick={handleValidate} disabled={isLoading}>
+        <Button onClick={handleValidate} disabled={isLoading} className="cursor-pointer">
           {isLoading ? "Validating..." : "Validate"}
         </Button>
       </div>

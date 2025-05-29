@@ -105,6 +105,19 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   const [isLargeDiff, setIsLargeDiff] = useState(false)
   const [showLargeDiff, setShowLargeDiff] = useState(false)
   const [isSideBySide, setIsSideBySide] = useState(false)
+  const [aiSummaryRequested, setAiSummaryRequested] = useState(false)
+
+  function stripValuesIfChildren(node:DiffNode) {
+    if (node.children && node.children.length > 0) {
+      delete node.value1;
+      delete node.value2;
+      if (node.children) {
+        node.children.forEach(child => stripValuesIfChildren(child));
+      }
+    } else if (node.children) {
+      node.children.forEach(child => stripValuesIfChildren(child));
+    }
+  }
 
   useEffect(() => {
     let result
@@ -146,16 +159,65 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
       setExpandedNodes(nodesToExpand)
       setDiffTree(result.display)
       setIsLoading(false)
+    }).catch((err) => {
+      setIsLoadingAI(false)
+      setIsLoading(false)
 
-      axios.post("/api/overview", result).then((responseAI) => {
-        const aiResult = responseAI.data as AIResp
-        setAiSummary(aiResult)
-        setIsLoadingAI(false)
+      console.error("Error fetching diff:", err)
+
+      setAiSummary({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: "AI summary not available. Please try again later."
+                }
+              ]
+            }
+          }
+        ]
       })
     })
 
   }, [file1, file2])
 
+  const generateAiSummary = () => {
+    if (isLoading || aiSummaryRequested || !diffTree) return
+
+    setIsLoadingAI(true)
+    setAiSummaryRequested(true)
+
+    let aiRequest = {
+      display: structuredClone(diffTree),
+      changes: structuredClone(apiChanges)
+    } as Resp
+
+    stripValuesIfChildren(aiRequest.display)
+
+    axios.post("/api/overview", aiRequest).then((responseAI) => {
+      const aiResult = responseAI.data as AIResp
+      setAiSummary(aiResult)
+    }).catch((err) => {
+      console.error("Error fetching AI summary:", err)
+      setAiSummary({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: "AI summary not available. Please try again later."
+                }
+              ]
+            }
+          }
+        ]
+      })
+    }).finally(() => {
+      setIsLoadingAI(false)
+      setIsLoadingAI(false)
+    })
+  }
 
   const calculateMetrics = (node: DiffNode): DiffMetrics => {
     const metrics: DiffMetrics = {
@@ -344,7 +406,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           {/* Left side (old) */}
           <div
             className={`break-all flex-1 flex items-start rounded-sm ${
-              node.type === "removed" ? "bg-red-50" : node.type === "changed" ? "bg-amber-50" : ""
+              node.type === "removed" ? "bg-red-50" : node.type === "changed" ? "bg-yellow-50" : ""
             }`}
             style={{ visibility: showLeft ? "visible" : "hidden" }}
           >
@@ -359,7 +421,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               {/* Key name */}
               <div
                 className={`font-mono py-1 pr-2 flex-shrink-0 ${
-                  node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-amber-800" : ""
+                  node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-yellow-800" : ""
                 }`}
               >
                 {node.type === "removed" && "- "}
@@ -395,7 +457,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           {/* Right side (new) */}
           <div
             className={`break-all flex-1 flex items-start rounded-sm ${
-              node.type === "added" ? "bg-green-50" : node.type === "changed" ? "bg-amber-50" : ""
+              node.type === "added" ? "bg-green-50" : node.type === "changed" ? "bg-yellow-50" : ""
             }`}
             style={{ visibility: showRight ? "visible" : "hidden" }}
           >
@@ -410,7 +472,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               {/* Key name */}
               <div
                 className={`font-mono py-1 pr-2 flex-shrink-0 ${
-                  node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-amber-800" : ""
+                  node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-yellow-800" : ""
                 }`}
               >
                 {node.type === "added" && "+ "}
@@ -454,7 +516,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                     {showLeft && (
                     <div
                       className={`font-mono py-1 ${
-                        node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-amber-800" : ""
+                        node.type === "removed" ? "text-red-800" : node.type === "changed" ? "text-yellow-800" : ""
                       }`}
                       style={{ paddingLeft: `${indent}px` }}
                     >
@@ -470,7 +532,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                     {showRight && (
                     <div
                       className={`font-mono py-1 ${
-                        node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-amber-800" : ""
+                        node.type === "added" ? "text-green-800" : node.type === "changed" ? "text-yellow-800" : ""
                       }`}
                       style={{ paddingLeft: `${indent}px` }}
                     >
@@ -566,16 +628,16 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center">
-                <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+                <span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
                 Deprecated Endpoints ({deprecatedEndpoints.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {deprecatedEndpoints.map((endpoint, index) => (
-                  <div key={`deprecated-${index}`} className="p-3 bg-amber-50 rounded-md">
+                  <div key={`deprecated-${index}`} className="p-3 bg-yellow-50 rounded-md">
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-amber-600">{endpoint.method}</Badge>
+                      <Badge className="bg-yellow-600">{endpoint.method}</Badge>
                       <code className="text-sm font-mono">{endpoint.path}</code>
                     </div>
                     {endpoint.summary && <p className="text-sm mt-1 text-gray-600">{endpoint.summary}</p>}
@@ -770,7 +832,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="flex items-center">
-                    <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
+                    <span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
                     Modified:
                   </span>
                   <span className="font-medium">{changed}</span>
@@ -778,6 +840,36 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="bg-gray-100 rounded-lg p-4">
+          <h4 className="text-sm font-medium mb-2">Change Distribution</h4>
+          <div className="h-6 w-full bg-gray-200 rounded-full overflow-hidden">
+            {total > 0 && (
+              <>
+                <div
+                  className="h-full bg-green-500 float-left"
+                  style={{ width: `${(added / total) * 100}%` }}
+                  title={`Added: ${added} (${Math.round((added / total) * 100)}%)`}
+                ></div>
+                <div
+                  className="h-full bg-red-500 float-left"
+                  style={{ width: `${(removed / total) * 100}%` }}
+                  title={`Removed: ${removed} (${Math.round((removed / total) * 100)}%)`}
+                ></div>
+                <div
+                  className="h-full bg-yellow-500 float-left"
+                  style={{ width: `${(changed / total) * 100}%` }}
+                  title={`Modified: ${changed} (${Math.round((changed / total) * 100)}%)`}
+                ></div>
+              </>
+            )}
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <span>0%</span>
+            <span>50%</span>
+            <span>100%</span>
+          </div>
         </div>
       </div>
     )
@@ -827,13 +919,14 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b gap-4 sm:gap-2">
           <h2 className="text-xl font-bold">File Comparison Results</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
             <Button
               variant={activeTab === "diff" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("diff")}
+              className="text-xs sm:text-sm cursor-pointer"
             >
               Diff View
             </Button>
@@ -841,20 +934,26 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
               variant={activeTab === "metrics" ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab("metrics")}
+              className="text-xs sm:text-sm cursor-pointer"
             >
               Metrics
             </Button>
-            <Button variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
+            <Button className="text-xs sm:text-sm cursor-pointer" variant={activeTab === "api" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("api")}>
               API Changes
             </Button>
             <Button
               variant={activeTab === "ai" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveTab("ai")}
+              onClick={() => {
+                setActiveTab("ai")
+                generateAiSummary()
+              }
+            }
+              className="text-xs sm:text-sm cursor-pointer"
             >
               AI Summary
             </Button>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} className="cursor-pointer">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -1066,6 +1165,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
                   checked={showUnchanged}
                   onCheckedChange={(e) => setShowUnchanged(e)}
                   id="hide-unchanged"
+                  className="cursor-pointer"
                 />
                 <label htmlFor="hide-unchanged" className="text-sm font-medium cursor-pointer">
                   Hide unchanged nodes
@@ -1075,8 +1175,8 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
           </div>
 
           {/* View toggle button */}
-          <div className="flex justify-end mb-4 gap-2">
-            {(activeTab === "diff") && <Button
+          <div className="flex justify-end mb-4 gap-2 ">
+            {(activeTab === "diff") && <Button className="cursor-pointer sm:flex hidden"
                 onClick={() => setIsSideBySide(!isSideBySide)}
             >
                 <ArrowLeftRight className="h-4 w-4" />
@@ -1084,7 +1184,7 @@ export default function DiffViewer({ file1, file2, onClose }: DiffViewerProps) {
             </Button>
             }
 
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose} className="cursor-pointer">Close</Button>
           </div>
         </div>
       </div>

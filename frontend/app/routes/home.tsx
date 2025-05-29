@@ -11,8 +11,8 @@ export function meta({}: Route.MetaArgs) {
 export default function ComparePage() {
   return (
     <>
-      <h1 className="text-3xl font-bold mb-6">File Comparison Tool</h1>
-      <p className="text-gray-600 mb-8">Upload two JSON or YAML files to compare their structure and content.</p>
+      <h1 className="text-3xl font-bold mb-6 text-center">File Comparison Tool</h1>
+      <p className="text-gray-600 mb-8 text-center">Upload two JSON or YAML files to compare their structure and content.</p>
       <FileComparisonTool />
     </>
   )

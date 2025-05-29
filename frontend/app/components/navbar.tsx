@@ -1,7 +1,13 @@
-import { Shield } from "lucide-react"
-import {NavLink} from "react-router";
+"use client"
+
+import { Shield, Menu, X } from "lucide-react"
+import {NavLink} from "react-router"
+import { useState } from "react"
+import { Button } from "./ui/button"
 
 export default function Navbar() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-3">
@@ -12,14 +18,44 @@ export default function Navbar() {
           </NavLink>
           <nav className="hidden md:flex items-center space-x-6">
             <NavLink to="/" className="text-sm text-gray-600 hover:text-primary">
-              Home
+              Compare
             </NavLink>
             <NavLink to="/validate" className="text-sm text-gray-600 hover:text-primary">
               Validate
             </NavLink>
           </nav>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t bg-white">
+          <div className="container mx-auto px-4 py-4">
+            <nav className="flex flex-col space-y-4">
+              <NavLink
+                to="/"
+                className="text-sm font-medium hover:text-primary text-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/validate"
+                className="text-sm font-medium text-primary text-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Compare
+              </NavLink>
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
