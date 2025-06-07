@@ -495,6 +495,15 @@ export default function OpenApiLinter() {
                   />
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  onClick={handleValidate}
+                  disabled={isLoading || (activeTab === "upload" && (!file || file.source !== "upload"))}
+                  className="w-full cursor-pointer"
+                >
+                  {isLoading ? "Validating..." : "Validate"}
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="folder">
@@ -521,6 +530,15 @@ export default function OpenApiLinter() {
                   />
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  onClick={handleValidate}
+                  disabled={isLoading || (activeTab === "folder" && (!file || file.source !== "folder"))}
+                  className="w-full cursor-pointer"
+                >
+                  {isLoading ? "Validating..." : "Validate"}
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="url">
@@ -543,6 +561,15 @@ export default function OpenApiLinter() {
                 />
 
                 <p className="text-xs text-gray-500">File will be fetched when you click "Validate"</p>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  onClick={handleValidate}
+                  disabled={isLoading || !url}
+                  className="w-full cursor-pointer"
+                >
+                  {isLoading ? "Validating..." : "Validate"}
+                </Button>
               </div>
             </TabsContent>
           </Tabs>
@@ -780,9 +807,6 @@ export default function OpenApiLinter() {
             </span>
           </div>
         </div>
-        <Button onClick={handleValidate} disabled={isLoading || (!file && !url)} className="cursor-pointer">
-          {isLoading ? "Validating..." : "Validate"}
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
