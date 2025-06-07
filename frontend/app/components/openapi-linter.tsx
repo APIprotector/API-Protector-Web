@@ -8,7 +8,7 @@ import { Card, CardContent } from "~/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
 import { Input } from "~/components/ui/input"
 import { Badge } from "~/components/ui/badge"
-import { Settings, FileJson, FileUp, LinkIcon, AlertCircle, CheckCircle, Info, AlertTriangle, X } from "lucide-react"
+import { Settings, FileJson, FileUp, LinkIcon, AlertCircle, CheckCircle, Info, AlertTriangle, X, FolderOpen } from "lucide-react"
 import { Label } from "~/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group"
 import { readFileContent } from "~/lib/utils";
@@ -20,6 +20,11 @@ import {bundleAndLoadRuleset} from "@stoplight/spectral-ruleset-bundler/with-loa
 import * as fs from "node:fs";
 import { parse } from '@stoplight/yaml'
 import {Alert, AlertDescription} from "~/components/ui/alert";
+import { Buffer } from 'buffer'
+if (typeof window !== 'undefined') {
+  window.Buffer = Buffer
+}
+import $RefParser from "@apidevtools/json-schema-ref-parser"
 
 interface LintResult {
   code: string
@@ -30,17 +35,17 @@ interface LintResult {
   column: number
 }
 
-// Update the FileData interface to remove the editor source type
+// Update the FileData interface to include folder source
 interface FileData {
   name: string
   content: string
-  source: "upload" | "url"
+  source: "upload" | "url" | "folder"
 }
 
 export default function OpenApiLinter() {
   const [file, setFile] = useState<FileData | null>(null)
   const [url, setUrl] = useState("")
-  const [activeTab, setActiveTab] = useState<"upload" | "url">("upload")
+  const [activeTab, setActiveTab] = useState<"upload" | "url" | "folder">("upload")
   const [activeRuleTab, setActiveRuleTab] = useState<"paste" | "url">("url")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,7 +55,6 @@ export default function OpenApiLinter() {
   const [customRuleset, setCustomRuleset] = useState("")
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -95,7 +99,6 @@ export default function OpenApiLinter() {
         name: droppedFile.name,
         content,
         source: "upload",
-        format: fileExtension as "json" | "yaml" | "yml",
       })
     } catch (err) {
       setError(`Error reading file: ${(err as Error).message}`)
@@ -150,6 +153,180 @@ export default function OpenApiLinter() {
     }
   }
 
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null)
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    try {
+      setIsLoading(true)
+
+      const fileArray = Array.from(files).filter(file => {
+        const ext = file.name.split(".").pop()?.toLowerCase()
+        return ["json", "yaml", "yml"].includes(ext || "")
+      })
+
+      if (fileArray.length === 0) {
+        setError("No JSON or YAML files found in the selected folder")
+        return
+      }
+
+      // Find main file
+      const mainFile = fileArray.find(file => {
+        const name = file.name.toLowerCase()
+        const path = (file.webkitRelativePath || file.name).toLowerCase()
+        return name.includes('openapi') ||
+          name.includes('swagger') ||
+          name === 'index.json' ||
+          name === 'index.yaml' ||
+          name === 'index.yml' ||
+          path.includes('openapi') ||
+          path.includes('swagger')
+      }) || fileArray[0]
+
+      let resolvedContent: any
+      let displayName: string
+
+      try {
+        // Try virtual file system approach first
+        resolvedContent = await buildCompleteOpenAPISpec(fileArray, mainFile)
+        displayName = `${mainFile.name} (resolved from ${fileArray.length} files)`
+      } catch (err) {
+        console.warn("Virtual file system failed, trying fallback:", err)
+
+        try {
+          // Fallback to direct resolution
+          const mainContent = await readFileContent(mainFile)
+          const mainExtension = mainFile.name.split(".").pop()?.toLowerCase() as string
+          const mainParsed = parseFileContent(mainContent, mainExtension, false)
+
+          const fileMap = new Map<string, string>()
+          for (const file of fileArray) {
+            const content = await readFileContent(file)
+            const relativePath = file.webkitRelativePath || file.name
+            const pathVariations = [
+              relativePath,
+              relativePath.replace(/\\/g, '/'),
+              `./${relativePath.replace(/\\/g, '/')}`,
+              `../${relativePath.replace(/\\/g, '/')}`,
+              file.name,
+              relativePath.split('/').slice(1).join('/'),
+            ]
+            pathVariations.forEach(variation => {
+              if (variation) fileMap.set(variation, content)
+            })
+          }
+
+          resolvedContent = await $RefParser.dereference(mainParsed, {
+            resolve: {
+              file: {
+                canRead: true,
+                read: async (file: any) => {
+                  let fileUrl = String(file.url || file)
+                    .replace(/^file:\/\/\//, '')
+                    .replace(/^file:\/\//, '')
+                    .replace(/^\/+/, '')
+
+                  const variations = [
+                    fileUrl,
+                    `./${fileUrl}`,
+                    `../${fileUrl}`,
+                    fileUrl.split('/').pop(),
+                    fileUrl.replace(/\\/g, '/'),
+                  ]
+
+                  for (const variation of variations) {
+                    if (variation && fileMap.has(variation)) {
+                      return fileMap.get(variation)!
+                    }
+                  }
+
+                  for (const [key, content] of fileMap.entries()) {
+                    if (key.endsWith(fileUrl) || fileUrl.endsWith(key.split('/').pop() || '')) {
+                      return content
+                    }
+                  }
+
+                  throw new Error(`Could not resolve: ${fileUrl}`)
+                }
+              }
+            },
+            dereference: {
+              circular: false,
+              onError: () => false // Continue on errors
+            }
+          })
+
+          displayName = `${mainFile.name} (resolved from ${fileArray.length} files)`
+        } catch (fallbackErr) {
+          // Final fallback: just the main file
+          const mainContent = await readFileContent(mainFile)
+          resolvedContent = mainContent
+          displayName = `${mainFile.name} (main file only - resolution failed)`
+        }
+      }
+
+      setFile({
+        name: displayName,
+        content: typeof resolvedContent === 'string' ? resolvedContent : JSON.stringify(resolvedContent, null, 2),
+        source: "folder"
+      })
+
+    } catch (err) {
+      setError(`Error processing folder: ${(err as Error).message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const buildCompleteOpenAPISpec = async (fileArray: File[], mainFile: File) => {
+    const createVirtualFileSystem = async () => {
+      const fileMap = new Map<string, string>()
+
+      for (const file of fileArray) {
+        const content = await readFileContent(file)
+        const relativePath = file.webkitRelativePath || file.name
+        const cleanPath = relativePath.split('/').slice(1).join('/')
+        fileMap.set(cleanPath, content)
+        fileMap.set(file.name, content)
+      }
+
+      return {
+        file: {
+          canRead: true,
+          read: async (file: any) => {
+            let filePath = String(file.url || file)
+              .replace(/^file:\/\/\//, '')
+              .replace(/^.*localhost:\d+\//, '')
+
+            if (fileMap.has(filePath)) {
+              return fileMap.get(filePath)!
+            }
+
+            const filename = filePath.split('/').pop()
+            if (filename && fileMap.has(filename)) {
+              return fileMap.get(filename)!
+            }
+
+            throw new Error(`Could not resolve: ${filePath}`)
+          }
+        }
+      }
+    }
+
+    const mainContent = await readFileContent(mainFile)
+    const mainExt = mainFile.name.split('.').pop()?.toLowerCase() || 'yaml'
+    const mainParsed = parseFileContent(mainContent, mainExt, false)
+    const resolver = await createVirtualFileSystem()
+
+    const resolved = await $RefParser.dereference(mainParsed, {
+      resolve: resolver,
+      dereference: { circular: false }
+    })
+
+    return resolved
+  }
+
   const handleValidate = async () => {
     setError(null)
     setLintResults(null)
@@ -159,11 +336,9 @@ export default function OpenApiLinter() {
       let contentToValidate = ""
 
       // Get content based on active tab
-      if (activeTab === "upload" && file) {
+      if ((activeTab === "upload" || activeTab === "folder") && file) {
         contentToValidate = file.content
       } else if (activeTab === "url" && url) {
-        // In a real implementation, we would fetch the URL here
-        // For the mock, we'll simulate a delay and use mock data
         contentToValidate = await fetchFileFromUrl(url)
       } else {
         throw new Error("Please provide an OpenAPI specification to validate")
@@ -285,8 +460,9 @@ export default function OpenApiLinter() {
       <Card className="h-full">
         <CardContent className="pt-6">
           <Tabs defaultValue="upload" value={activeTab} onValueChange={(value) => {setActiveTab(value as any);}}>
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="upload" className="cursor-pointer">Upload File</TabsTrigger>
+              <TabsTrigger value="folder" className="cursor-pointer">Upload Folder</TabsTrigger>
               <TabsTrigger value="url" className="cursor-pointer">URL</TabsTrigger>
             </TabsList>
 
@@ -316,6 +492,32 @@ export default function OpenApiLinter() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     accept=".json,.yaml,.yml"
                     onChange={handleFileUpload}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="folder">
+              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
+                <FolderOpen className="h-10 w-10 text-gray-400 mb-2" />
+                <p className="text-sm font-medium mb-2">
+                  {file && file.source === "folder" ? file.name : "Upload folder containing OpenAPI specs"}
+                </p>
+                <p className="text-xs text-gray-500 mb-2 text-center">
+                  Select a folder containing OpenAPI/JSON/YAML files
+                </p>
+                <div className="relative">
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Select Folder
+                  </Button>
+                  <input
+                    type="file"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    webkitdirectory=""
+                    directory=""
+                    multiple
+                    onChange={handleFolderUpload}
                   />
                 </div>
               </div>
@@ -528,32 +730,14 @@ export default function OpenApiLinter() {
                         Custom Ruleset
                       </Label>
                       <p className="text-sm text-gray-500 mb-2">
-                        {/*Provide a URL to a custom ruleset or paste your ruleset directly.*/}
                         Provide a URL to a custom ruleset.
                       </p>
-                      {/*<Tabs defaultValue="url" className="w-full" value={activeRuleTab} onValueChange={(value) => {setActiveRuleTab(value as any);}}>*/}
-                      {/*  <TabsList className="grid w-full grid-cols-2">*/}
-                      {/*    <TabsTrigger value="url">URL</TabsTrigger>*/}
-                      {/*    <TabsTrigger value="paste">Paste</TabsTrigger>*/}
-                      {/*  </TabsList>*/}
-                      {/*  <TabsContent value="url" className="pt-2">*/}
-                          <Input
-                            placeholder="https://example.com/ruleset.json"
-                            value={customRulesetUrl}
-                            onChange={(e) => setCustomRulesetUrl(e.target.value)}
-                            disabled={ruleset !== "custom"}
-                          />
-                      {/*  </TabsContent>*/}
-                      {/*  <TabsContent value="paste" className="pt-2">*/}
-                      {/*    <Textarea*/}
-                      {/*      placeholder="Paste your ruleset here..."*/}
-                      {/*      className="min-h-[150px] font-mono text-sm"*/}
-                      {/*      value={customRuleset}*/}
-                      {/*      onChange={(e) => setCustomRuleset(e.target.value)}*/}
-                      {/*      disabled={ruleset !== "custom"}*/}
-                      {/*    />*/}
-                      {/*  </TabsContent>*/}
-                      {/*</Tabs>*/}
+                      <Input
+                        placeholder="https://example.com/ruleset.json"
+                        value={customRulesetUrl}
+                        onChange={(e) => setCustomRulesetUrl(e.target.value)}
+                        disabled={ruleset !== "custom"}
+                      />
                     </div>
                   </div>
                 </RadioGroup>
@@ -596,7 +780,7 @@ export default function OpenApiLinter() {
             </span>
           </div>
         </div>
-        <Button onClick={handleValidate} disabled={isLoading} className="cursor-pointer">
+        <Button onClick={handleValidate} disabled={isLoading || (!file && !url)} className="cursor-pointer">
           {isLoading ? "Validating..." : "Validate"}
         </Button>
       </div>
