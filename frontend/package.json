@@ -10,6 +10,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^13.0.3",
     "@radix-ui/react-dialog": "^1.1.11",
     "@radix-ui/react-label": "^2.1.4",
     "@radix-ui/react-radio-group": "^1.3.4",
@@ -25,6 +26,7 @@
     "@stoplight/spectral-ruleset-bundler": "^1.6.3",
     "@tailwindcss/postcss": "^4.0.12",
     "axios": "^1.8.4",
+    "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "isbot": "^5.1.17",
