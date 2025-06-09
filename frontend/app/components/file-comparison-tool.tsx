@@ -384,7 +384,7 @@ export default function FileComparisonTool() {
           read: async (file: any) => {
             let filePath = String(file.url || file)
               .replace(/^file:\/\/\//, '')
-              .replace(/^.*localhost:\d+\//, '')
+              .replace(/^.*xederro.tech:\d+\//, '')
 
             if (fileMap.has(filePath)) {
               return fileMap.get(filePath)!
