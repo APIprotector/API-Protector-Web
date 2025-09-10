@@ -2,7 +2,9 @@ package com.APIprotector.apiprotector.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,9 +28,6 @@ public class OverviewService {
             @Value("${gemini.api.model}") String modelName,
             @Value("${gemini.task.prompt}") String prompt) {
 
-        if (apiKey == null || apiKey.isEmpty()) {
-            throw new IllegalArgumentException("Gemini API key is not configured");
-        }
 
         if (prompt == null || prompt.trim().isEmpty()) {
             throw new IllegalArgumentException("Prompt is empty or not configured");
@@ -47,6 +46,10 @@ public class OverviewService {
         if (jsonContents == null || jsonContents.trim().isEmpty()) {
             System.err.println("Method called with empty or null JSON data.");
             return Mono.error(new IllegalArgumentException("Input JSON data cannot be empty."));
+        }
+
+        if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
+            return Mono.just("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"# AI overview is currently unavailable.\"}]}}]}");
         }
 
         return sendPrompt(this.prompt + "\n\nHere is the JSON data to analyze:\n```json\n" + jsonContents + "\n```\n");
