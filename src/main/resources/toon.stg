@@ -1,0 +1,51 @@
+group toon;
+
+root_obj(pairs) ::= <<
+<pairs; separator="\n">
+>>
+
+root_arr(size, elements) ::= <<
+[<size>]: <elements; separator=",">
+>>
+
+obj(pairs) ::= <<
+<pairs; separator="\n">
+>>
+
+pair(name, value) ::= <<
+<name>: <value>
+>>
+
+pair_with_nested_obj(name, value) ::= <<
+<name>:
+  <value>
+>>
+
+primitive_arr(name, size, elements) ::= <<
+<name>[<size>]: <elements; separator=",">
+>>
+
+tabular_arr(name, size, headers, rows) ::= <<
+<name>[<size>]{<headers; separator=",">}:
+  <rows; separator="\n">
+>>
+
+mixed_arr(name, size, items) ::= <<
+<name>[<size>]:
+  <items; separator="\n">
+>>
+
+mixed_arr_item(value) ::= <<
+- <value>
+>>
+
+// When mixed_arr_item's value is an object, the first field follows the hyphen
+mixed_arr_obj_item(pairs) ::= <<
+- <pairs; separator="\n  ">
+>>
+
+primitive(v) ::= "<v>"
+unquoted(v) ::= "<v>"
+quoted(v) ::= "\"<v>\""
+empty_obj() ::= ""
+empty_arr(name) ::= "<name>[0]:"

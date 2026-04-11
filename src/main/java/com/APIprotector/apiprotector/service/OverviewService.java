@@ -1,5 +1,13 @@
 package com.APIprotector.apiprotector.service;
 
+import com.APIprotector.apiprotector.jtt.JSONLexer;
+import com.APIprotector.apiprotector.jtt.JSONParser;
+import com.APIprotector.apiprotector.jtt.ToonListener;
+import java.util.Objects;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
+import org.stringtemplate.v4.*;
+import java.io.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -20,14 +28,16 @@ public class OverviewService {
     private final String apiKey;
     private final String modelName;
     private final String prompt;
+    private final Boolean toon;
 
     public OverviewService(
             WebClient.Builder webClientBuilder,
             @Value("${gemini.api.baseurl}") String baseUrl,
             @Value("${gemini.api.key}") String apiKey,
             @Value("${gemini.api.model}") String modelName,
-            @Value("${gemini.task.prompt}") String prompt) {
-
+            @Value("${gemini.task.prompt}") String prompt,
+            @Value("${toon}") String toon
+        ) {
 
         if (prompt == null || prompt.trim().isEmpty()) {
             throw new IllegalArgumentException("Prompt is empty or not configured");
@@ -40,6 +50,7 @@ public class OverviewService {
         this.apiKey = apiKey;
         this.modelName = modelName;
         this.prompt = prompt;
+        this.toon = Objects.equals(toon, "true");
     }
 
     public Mono<String> getOverview(String jsonContents) {
@@ -52,7 +63,22 @@ public class OverviewService {
             return Mono.just("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"# AI overview is currently unavailable.\"}]}}]}");
         }
 
-        return sendPrompt(this.prompt + "\n\nHere is the JSON data to analyze:\n```json\n" + jsonContents + "\n```\n");
+        if (this.toon) {
+            CharStream input = CharStreams.fromString(jsonContents);
+            JSONLexer lexer = new JSONLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            JSONParser parser = new JSONParser(tokens);
+            JSONParser.JsonContext tree = parser.json();
+
+            ParseTreeWalker walker = new ParseTreeWalker();
+            ToonListener listener = new ToonListener();
+            walker.walk(listener, tree);
+            ST result = listener.getResult(tree);
+
+            return sendPrompt(this.prompt + "\n\nHere is the TOON data to analyze:\n```toon\n" + result.render() + "\n```\n");
+        } else {
+            return sendPrompt(this.prompt + "\n\nHere is the JSON data to analyze:\n```json\n" + jsonContents + "\n```\n");
+        }
     }
 
     public Mono<String> sendPrompt(String prompt) {

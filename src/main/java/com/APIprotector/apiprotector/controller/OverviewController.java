@@ -33,7 +33,7 @@ public class OverviewController {
         }
 
         try {
-            objectMapper.readTree(jsonContents);
+            jsonContents = objectMapper.readTree(jsonContents).toPrettyString();
         } catch (JsonProcessingException e) {
             return Mono.just(ResponseEntity.badRequest().body("Invalid JSON format in request body: " + e.getMessage()));
         }
